@@ -26,9 +26,12 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 SECRET_KEY = 'django-insecure-mud124#s3q!prqf@2!@+spu-%$=y%=c9l6sud^b*yio5(^nz^@'
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = True
+DEBUG = False
 
-ALLOWED_HOSTS = []
+#ALLOWED_HOSTS = []
+ALLOWED_HOSTS = ["aiparchaar.com", "www.aiparchaar.com", "localhost", "127.0.0.1", "[::1]"]
+# forms posted from the site over HTTPS (sign in, every save) are trusted
+CSRF_TRUSTED_ORIGINS = ["https://aiparchaar.com", "https://www.aiparchaar.com"]
 
 
 # Application definition
