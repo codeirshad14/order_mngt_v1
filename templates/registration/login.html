@@ -1,0 +1,71 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+    <title>Sign In &middot; Order Mgmt</title>
+    <link rel="stylesheet" href="{% static 'assets/css/style.css' %}">
+    <script>
+        try {
+            var t = localStorage.getItem("om-theme");
+            document.documentElement.setAttribute("data-theme",
+                t || (matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light"));
+        } catch (e) { }
+    </script>
+</head>
+
+<!-- standalone: the sidebar and topbar belong to signed-in pages, but it
+     loads the same stylesheet so the theme is unchanged -->
+
+<body class="auth-page">
+    <main class="auth-card">
+        <div class="auth-card__brand">
+            <span class="sidebar__logo"><ion-icon name="cube"></ion-icon></span>
+            <strong>Order Mgmt</strong>
+        </div>
+
+        <h1>Sign in</h1>
+        <p class="muted">Enter your account details to continue.</p>
+
+        {% if form.errors %}
+        <div class="form-alert">
+            Your username and password did not match. Please try again.
+        </div>
+        {% endif %}
+
+        {% if next and user.is_authenticated %}
+        <div class="form-alert">
+            This account does not have access to that page. Sign in with a different one.
+        </div>
+        {% endif %}
+
+        <form method="post" action="{% url 'login' %}">
+            {% csrf_token %}
+            <input type="hidden" name="next" value="{{ next }}">
+
+            <div class="field">
+                <label for="{{ form.username.id_for_label }}">Username</label>
+                <input class="input" type="text" name="username" id="{{ form.username.id_for_label }}"
+                       value="{{ form.username.value|default:'' }}" autocomplete="username"
+                       autofocus required>
+            </div>
+
+            <div class="field">
+                <label for="{{ form.password.id_for_label }}">Password</label>
+                <input class="input" type="password" name="password" id="{{ form.password.id_for_label }}"
+                       autocomplete="current-password" required>
+            </div>
+
+            <button class="btn btn--primary auth-card__submit" type="submit">
+                <ion-icon name="log-in-outline"></ion-icon> Sign In
+            </button>
+        </form>
+    </main>
+
+    <script type="module" src="https://unpkg.com/ionicons@5.5.2/dist/ionicons/ionicons.esm.js"></script>
+    <script nomodule src="https://unpkg.com/ionicons@5.5.2/dist/ionicons/ionicons.js"></script>
+</body>
+
+</html>

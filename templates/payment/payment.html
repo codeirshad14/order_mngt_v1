@@ -1,0 +1,384 @@
+{% extends "mybase.html" %}
+{% load static %}
+
+{% block title %}Payments{% endblock %}
+
+{% block page_path %}Payments{% endblock %}
+
+{% block page_title %}Payments{% endblock %}
+
+
+{% block content %}
+
+<div class="page-head__actions">
+    <button class="btn btn--primary" type="button" data-modal-open="addPayment">
+        <ion-icon name="add-outline"></ion-icon> Record Payment
+    </button>
+</div>
+
+</div>
+
+
+
+<!---the dealer's position at a glance -->
+
+<section class="grid grid--cards">
+    <article class="stat" style="--stat-color: var(--primary-500)">
+        <div class="stat__top">
+            <span class="stat__label">Total Billed</span>
+            <span class="stat__icon"><ion-icon name="document-text-outline"></ion-icon></span>
+        </div>
+        <div>
+            <div class="stat__value">{{ billed|floatformat:0 }}</div>
+            <div class="stat__foot">placed orders</div>
+        </div>
+    </article>
+
+    <article class="stat" style="--stat-color: var(--success)">
+        <div class="stat__top">
+            <span class="stat__label">Received</span>
+            <span class="stat__icon"><ion-icon name="checkmark-circle-outline"></ion-icon></span>
+        </div>
+        <div>
+            <div class="stat__value">{{ received|floatformat:0 }}</div>
+            <div class="stat__foot">{{ advance|floatformat:0 }} held as advance</div>
+        </div>
+    </article>
+
+    <article class="stat" style="--stat-color: var(--danger)">
+        <div class="stat__top">
+            <span class="stat__label">Pending</span>
+            <span class="stat__icon"><ion-icon name="alert-circle-outline"></ion-icon></span>
+        </div>
+        <div>
+            <div class="stat__value">{{ outstanding|floatformat:0 }}</div>
+            <div class="stat__foot">
+                {% if outstanding > 0 %}
+                across {{ pending_count }} order{{ pending_count|pluralize }}
+                {% else %}
+                nothing outstanding
+                {% endif %}
+            </div>
+        </div>
+    </article>
+
+    <article class="stat" style="--stat-color: #f59e0b">
+        <div class="stat__top">
+            <span class="stat__label">Unpaid Orders</span>
+            <span class="stat__icon"><ion-icon name="hourglass-outline"></ion-icon></span>
+        </div>
+        <div>
+            <div class="stat__value">{{ pending_count }}</div>
+            <div class="stat__foot">
+                {% if is_manager and not dealer %}all dealers{% else %}{{ dealer.name }}{% endif %}
+            </div>
+        </div>
+    </article>
+</section>
+
+
+<!---orders still owing -->
+
+<!---data-live: each panel filters itself without reloading. Both point at
+     the same view; each only swaps the regions that live inside it. -->
+
+<section class="panel" data-live data-live-url="{% url 'payment:payment' %}">
+    <div class="toolbar">
+        <h2 class="page-title">Outstanding orders</h2>
+
+        <!---searches every outstanding order, not just the ones on screen.
+             Its own box (oq), so it never disturbs the receipts search. -->
+        <form class="search" method="get" data-live-form>
+            <ion-icon name="search-outline"></ion-icon>
+            <input type="search" name="oq" value="{{ outstanding_search }}" autocomplete="off"
+                   placeholder="Search order no, dealer, status…"
+                   aria-label="Search outstanding orders">
+            <!---carry the other panel's filters, or searching here clears them -->
+            {% if dealer_id %}<input type="hidden" name="dealer" value="{{ dealer_id }}">{% endif %}
+            {% if payment_search %}<input type="hidden" name="pq" value="{{ payment_search }}">{% endif %}
+            {% if mode %}<input type="hidden" name="mode" value="{{ mode }}">{% endif %}
+            {% if date_from %}<input type="hidden" name="from" value="{{ date_from }}">{% endif %}
+            {% if date_to %}<input type="hidden" name="to" value="{{ date_to }}">{% endif %}
+        </form>
+
+        <div id="outstandingFilters" data-live-region>
+        {% if is_manager %}
+        <form method="get" class="range-filter" data-live-form>
+            {% if outstanding_search %}<input type="hidden" name="oq" value="{{ outstanding_search }}">{% endif %}
+            {% if payment_search %}<input type="hidden" name="pq" value="{{ payment_search }}">{% endif %}
+            <select class="select" name="dealer" aria-label="Filter by dealer">
+                <option value="">All dealers</option>
+                {% for d in dealers %}
+                <option value="{{ d.pk }}" {% if dealer_id == d.pk|stringformat:"s" %}selected{% endif %}>{{ d.name }}</option>
+                {% endfor %}
+            </select>
+            <button class="btn btn--primary btn--sm" type="submit" title="Apply" aria-label="Apply">
+                <ion-icon name="funnel-outline"></ion-icon>
+            </button>
+        </form>
+        {% endif %}
+
+        {% if outstanding_search %}
+        <a class="btn btn--ghost btn--sm" title="Clear search" aria-label="Clear search"
+           href="?{% if dealer_id %}dealer={{ dealer_id }}&{% endif %}{% if payment_search %}pq={{ payment_search|urlencode }}&{% endif %}{% if mode %}mode={{ mode }}&{% endif %}{% if date_from %}from={{ date_from }}&{% endif %}{% if date_to %}to={{ date_to }}{% endif %}">
+            <ion-icon name="close-outline"></ion-icon>
+        </a>
+        {% endif %}
+
+        <div class="toolbar__spacer"></div>
+        <span class="muted">
+            <strong>{{ pending_count }}</strong>
+            {% if outstanding_search %}of {{ pending_total }} {% endif %}pending
+        </span>
+        </div><!--- /#outstandingFilters -->
+    </div>
+
+    <div id="outstandingResults" data-live-region>
+    <div class="table-wrap table-wrap--tall">
+        <table class="table table--stack">
+            <thead>
+                <tr>
+                    <th>Order No</th>
+                    {% if is_manager %}<th>Dealer</th>{% endif %}
+                    <th class="hide-sm">Date</th>
+                    <th class="num">Order Value</th>
+                    <th class="num">Paid</th>
+                    <th class="num">Balance</th>
+                    <th>Status</th>
+                    <th class="actions"><span class="sr-only">Receive</span></th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for row in pending_rows %}
+                <tr>
+                    <td data-label="Order No"><code class="dim">{{ row.order.order_no }}</code></td>
+                    {% if is_manager %}<td data-label="Dealer">{{ row.order.dealer.name }}</td>{% endif %}
+                    <td data-label="Date" class="hide-sm">{{ row.order.ordered_on|date:"j M Y" }}</td>
+                    <td data-label="Order Value" class="num">{{ row.order.total_amount|floatformat:2 }}</td>
+                    <td data-label="Paid" class="num">{{ row.paid|floatformat:2 }}</td>
+                    <td data-label="Balance" class="num"><strong>{{ row.balance|floatformat:2 }}</strong></td>
+                    <td data-label="Status">
+                        {% if row.paid > 0 %}
+                        <span class="badge badge--warning">Part paid</span>
+                        {% else %}
+                        <span class="badge badge--danger">Unpaid</span>
+                        {% endif %}
+                    </td>
+                    <td data-label="Receive" class="actions">
+                        <!---opens the modal with this order and its balance filled in -->
+                        <a class="btn btn--primary btn--sm" data-live-skip
+                           href="?pay={{ row.order.pk }}{% if dealer_id %}&dealer={{ dealer_id }}{% endif %}">
+                            <ion-icon name="cash-outline"></ion-icon> Receive
+                        </a>
+                    </td>
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="8">
+                        <div class="empty">
+                            {% if outstanding_search %}
+                            <ion-icon name="search-outline"></ion-icon>
+                            <h3>No outstanding order matches</h3>
+                            <p>Nothing owing matches &ldquo;{{ outstanding_search|truncatechars:30 }}&rdquo;.
+                               Clear the search to see all {{ pending_total }}.</p>
+                            {% else %}
+                            <ion-icon name="checkmark-done-outline"></ion-icon>
+                            <h3>Everything is settled</h3>
+                            <p>No order is waiting on payment.</p>
+                            {% endif %}
+                        </div>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+
+    <!---inside the live region, so paging swaps the rows in without a reload -->
+    <div class="panel__foot">
+        <div class="pagination">
+            <span class="muted">
+                Showing <strong>{{ pending_page.start_index }}&ndash;{{ pending_page.end_index }}</strong>
+                of <strong>{{ pending_count }}</strong> pending order{{ pending_count|pluralize }}
+            </span>
+
+            {% include "_pagination.html" with page=pending_page page_range=pending_range querystring=pending_query %}
+        </div>
+    </div>
+    </div><!--- /#outstandingResults -->
+</section>
+
+
+<!---receipts -->
+
+<section class="panel" data-live data-live-url="{% url 'payment:payment' %}">
+    <div class="toolbar">
+        <h2 class="page-title">Payment history</h2>
+
+        <!---searches every receipt in the database, not just the 30 listed.
+             Its own box (pq), so it never disturbs the outstanding search. -->
+        <form class="search" method="get" data-live-form>
+            <ion-icon name="search-outline"></ion-icon>
+            <input type="search" name="pq" value="{{ payment_search }}" autocomplete="off"
+                   placeholder="Search receipt, dealer, order, reference…"
+                   aria-label="Search payment history">
+            {% if dealer_id %}<input type="hidden" name="dealer" value="{{ dealer_id }}">{% endif %}
+            {% if outstanding_search %}<input type="hidden" name="oq" value="{{ outstanding_search }}">{% endif %}
+            {% if mode %}<input type="hidden" name="mode" value="{{ mode }}">{% endif %}
+            {% if date_from %}<input type="hidden" name="from" value="{{ date_from }}">{% endif %}
+            {% if date_to %}<input type="hidden" name="to" value="{{ date_to }}">{% endif %}
+        </form>
+
+        <div id="historyFilters" data-live-region>
+        <form method="get" class="range-filter" data-live-form>
+            {% if dealer_id %}<input type="hidden" name="dealer" value="{{ dealer_id }}">{% endif %}
+            {% if outstanding_search %}<input type="hidden" name="oq" value="{{ outstanding_search }}">{% endif %}
+            {% if payment_search %}<input type="hidden" name="pq" value="{{ payment_search }}">{% endif %}
+            <select class="select" name="mode" aria-label="Filter by mode">
+                <option value="">All modes</option>
+                {% for value, label in modes %}
+                <option value="{{ value }}" {% if mode == value %}selected{% endif %}>{{ label }}</option>
+                {% endfor %}
+            </select>
+
+            <span class="range-filter__dates">
+                <ion-icon name="calendar-outline"></ion-icon>
+                <input class="input" type="date" name="from" value="{{ date_from }}" aria-label="From date">
+                <span class="range-filter__dash">&ndash;</span>
+                <input class="input" type="date" name="to" value="{{ date_to }}" aria-label="To date">
+            </span>
+
+            <button class="btn btn--primary btn--sm" type="submit" title="Apply" aria-label="Apply">
+                <ion-icon name="funnel-outline"></ion-icon>
+            </button>
+
+            {% if date_from or date_to or mode or payment_search %}
+            <a class="btn btn--ghost btn--sm" title="Clear" aria-label="Clear"
+               href="?{% if dealer_id %}dealer={{ dealer_id }}&{% endif %}{% if outstanding_search %}oq={{ outstanding_search|urlencode }}{% endif %}">
+                <ion-icon name="close-outline"></ion-icon>
+            </a>
+            {% endif %}
+        </form>
+
+        <div class="toolbar__spacer"></div>
+        <span class="muted">
+            <strong>{{ payment_count }}</strong> receipt{{ payment_count|pluralize }}
+        </span>
+        </div><!--- /#historyFilters -->
+    </div>
+
+    <div id="historyResults" data-live-region>
+    <div class="table-wrap table-wrap--tall">
+        <table class="table table--stack">
+            <thead>
+                <tr>
+                    <th>Receipt</th>
+                    {% if is_manager %}<th>Dealer</th>{% endif %}
+                    <th class="hide-sm">Date</th>
+                    <th>Against</th>
+                    <th class="hide-sm">Mode</th>
+                    <th class="hide-sm">Reference</th>
+                    <th class="num">Amount</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for p in payments %}
+                <tr>
+                    <td data-label="Receipt"><code class="dim">{{ p.receipt_no }}</code></td>
+                    {% if is_manager %}<td data-label="Dealer">{{ p.dealer.name }}</td>{% endif %}
+                    <td data-label="Date" class="hide-sm">{{ p.paid_on|date:"j M Y" }}</td>
+                    <td data-label="Against">
+                        {% if p.is_advance %}
+                        <span class="badge badge--info">Advance</span>
+                        {% else %}
+                        <code class="dim">{{ p.order.order_no }}</code>
+                        {% endif %}
+                    </td>
+                    <td data-label="Mode" class="hide-sm">{{ p.get_mode_display }}</td>
+                    <td data-label="Reference" class="hide-sm">{{ p.reference|default:"—" }}</td>
+                    <td data-label="Amount" class="num"><strong>{{ p.amount|floatformat:2 }}</strong></td>
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="7">
+                        <div class="empty">
+                            {% if payment_search or mode or date_from or date_to %}
+                            <ion-icon name="search-outline"></ion-icon>
+                            <h3>No receipt matches</h3>
+                            <p>{% if payment_search %}Nothing found for
+                               &ldquo;{{ payment_search|truncatechars:30 }}&rdquo;.{% else %}No receipt
+                               falls inside that filter.{% endif %} Clear it to see them all.</p>
+                            {% else %}
+                            <ion-icon name="wallet-outline"></ion-icon>
+                            <h3>No payments recorded</h3>
+                            <p>Use Record Payment to add the first receipt.</p>
+                            {% endif %}
+                        </div>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+
+    <!---history pages on ?hpage, so the two tables page independently -->
+    <div class="panel__foot">
+        <div class="pagination">
+            <span class="muted">
+                Showing <strong>{{ payment_page.start_index }}&ndash;{{ payment_page.end_index }}</strong>
+                of <strong>{{ payment_count }}</strong> receipt{{ payment_count|pluralize }}
+            </span>
+
+            {% include "_pagination.html" with page=payment_page page_range=payment_range querystring=payment_query param="hpage" %}
+        </div>
+    </div>
+    </div><!--- /#historyResults -->
+</section>
+
+
+<!---Record payment modal -->
+
+<div class="modal{% if form.errors or open_modal %} is-open{% endif %}" id="addPayment" hidden>
+    <div class="modal__backdrop" data-modal-close></div>
+
+    <div class="modal__panel" role="dialog" aria-modal="true" aria-labelledby="addPaymentTitle">
+        <header class="modal__head">
+            <h2 id="addPaymentTitle">Record Payment</h2>
+            <button class="icon-btn" type="button" data-modal-close aria-label="Close">
+                <ion-icon name="close-outline"></ion-icon>
+            </button>
+        </header>
+
+        <form method="post" novalidate action="{% url 'payment:payment' %}">
+            {% csrf_token %}
+
+            <div class="modal__body">
+                {% if form.non_field_errors %}
+                <div class="form-alert">{{ form.non_field_errors }}</div>
+                {% endif %}
+
+                <div class="form-grid">
+                    {% for field in form %}
+                    <div class="field{% if field.name == 'note' %} field--wide{% endif %}">
+                        <label for="{{ field.id_for_label }}">
+                            {{ field.label }}{% if field.field.required %} <span class="req">*</span>{% endif %}
+                        </label>
+                        {{ field }}
+                        {% if field.help_text %}<small class="hint">{{ field.help_text }}</small>{% endif %}
+                        {% if field.errors %}<small class="field-error">{{ field.errors|striptags }}</small>{% endif %}
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+
+            <footer class="modal__foot">
+                <button class="btn btn--ghost" type="button" data-modal-close>Cancel</button>
+                <button class="btn btn--primary" type="submit">
+                    <ion-icon name="save-outline"></ion-icon> Save Receipt
+                </button>
+            </footer>
+        </form>
+    </div>
+</div>
+
+{% endblock %}

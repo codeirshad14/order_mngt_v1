@@ -1,0 +1,30 @@
+{% comment %}
+The stock segment and the Clear button. The search input stays out of this
+region so a live swap cannot interrupt typing.
+
+"All" clears the search too, so it really is everything; the others keep the
+search term. The wrapper is display:contents, so these remain direct flex
+children of .toolbar.
+{% endcomment %}
+
+<div id="productFilters" data-live-region>
+    <div class="segment" role="group" aria-label="Filter by stock">
+        <a class="{% if status == 'all' and not search %}is-active{% endif %}"
+           href="?{% if show_all %}per_page=all{% endif %}">All</a>
+        <a class="{% if status == 'instock' %}is-active{% endif %}"
+           href="?status=instock{% if search %}&q={{ search|urlencode }}{% endif %}{% if show_all %}&per_page=all{% endif %}">In stock</a>
+        <a class="{% if status == 'low' %}is-active{% endif %}"
+           href="?status=low{% if search %}&q={{ search|urlencode }}{% endif %}{% if show_all %}&per_page=all{% endif %}">Low</a>
+        <a class="{% if status == 'out' %}is-active{% endif %}"
+           href="?status=out{% if search %}&q={{ search|urlencode }}{% endif %}{% if show_all %}&per_page=all{% endif %}">Out</a>
+    </div>
+
+    {% if search or status != 'all' %}
+    <a class="btn btn--ghost btn--sm" href="?{% if show_all %}per_page=all{% endif %}">
+        <ion-icon name="close-outline"></ion-icon>
+        Clear{% if search %} &ldquo;{{ search|truncatechars:18 }}&rdquo;{% endif %}
+    </a>
+    {% endif %}
+
+    <div class="toolbar__spacer"></div>
+</div>

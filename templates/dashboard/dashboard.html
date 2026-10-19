@@ -1,0 +1,336 @@
+{% extends "mybase.html" %}
+{% load static %}
+
+{% block title %}Dashboard{% endblock %}
+
+{% block page_path %}Dashboard{% endblock %}
+
+{% block page_title %}Dashboard{% endblock %}
+
+
+{% block content %}
+
+<div class="page-head__actions">
+    <a class="btn btn--primary" href="{% url 'myorder:catalogue' %}">
+        <ion-icon name="cart-outline"></ion-icon> New Order
+    </a>
+</div>
+
+</div>
+
+
+<!---filters: quick presets, then an exact range -->
+
+<section class="panel">
+    <div class="toolbar">
+        <div class="segment" role="group" aria-label="Date range">
+            {% for key, item in ranges.items %}
+            <a class="{% if preset == key %}is-active{% endif %}" href="?range={{ key }}">{{ item.0 }}</a>
+            {% endfor %}
+        </div>
+
+        <form method="get" class="range-filter">
+            {% if is_manager %}
+            <select class="select" name="dealer" aria-label="Filter by dealer">
+                <option value="">All dealers</option>
+                {% for d in dealers %}
+                <option value="{{ d.pk }}" {% if dealer_id == d.pk|stringformat:"s" %}selected{% endif %}>{{ d.name }}</option>
+                {% endfor %}
+            </select>
+            {% endif %}
+
+            <select class="select" name="status" aria-label="Filter by status">
+                <option value="">All statuses</option>
+                {% for value, label in statuses %}
+                <option value="{{ value }}" {% if status == value %}selected{% endif %}>{{ label }}</option>
+                {% endfor %}
+            </select>
+
+            <span class="range-filter__dates">
+                <ion-icon name="calendar-outline"></ion-icon>
+                <input class="input" type="date" name="from" value="{{ date_from }}" aria-label="From date">
+                <span class="range-filter__dash">&ndash;</span>
+                <input class="input" type="date" name="to" value="{{ date_to }}" aria-label="To date">
+            </span>
+
+            <button class="btn btn--primary btn--sm" type="submit" title="Apply filter" aria-label="Apply filter">
+                <ion-icon name="funnel-outline"></ion-icon>
+            </button>
+        </form>
+
+        <div class="toolbar__spacer"></div>
+        <span class="muted">
+            {% if is_manager %}<span class="badge badge--info">Management</span>{% else %}{{ dealer.name }}{% endif %}
+        </span>
+    </div>
+</section>
+
+
+<!---headline numbers: placed orders only, so drafts never inflate revenue -->
+
+<section class="grid grid--cards">
+    <article class="stat" style="--stat-color: var(--primary-500)">
+        <div class="stat__top">
+            <span class="stat__label">Orders Placed</span>
+            <span class="stat__icon"><ion-icon name="receipt-outline"></ion-icon></span>
+        </div>
+        <div>
+            <div class="stat__value">{{ order_count }}</div>
+            <div class="stat__foot">
+                {% if order_delta is not None %}
+                <span class="delta {% if order_delta < 0 %}delta--down{% else %}delta--up{% endif %}">
+                    <ion-icon name="{% if order_delta < 0 %}trending-down-outline{% else %}trending-up-outline{% endif %}"></ion-icon>
+                    {{ order_delta }}%
+                </span>
+                {% endif %}
+                vs previous period
+            </div>
+        </div>
+    </article>
+
+    <article class="stat" style="--stat-color: var(--accent-500)">
+        <div class="stat__top">
+            <span class="stat__label">Order Value</span>
+            <span class="stat__icon"><ion-icon name="cash-outline"></ion-icon></span>
+        </div>
+        <div>
+            <div class="stat__value">{{ revenue|floatformat:0 }}</div>
+            <div class="stat__foot">
+                {% if revenue_delta is not None %}
+                <span class="delta {% if revenue_delta < 0 %}delta--down{% else %}delta--up{% endif %}">
+                    <ion-icon name="{% if revenue_delta < 0 %}trending-down-outline{% else %}trending-up-outline{% endif %}"></ion-icon>
+                    {{ revenue_delta }}%
+                </span>
+                {% endif %}
+                incl. GST {{ gst|floatformat:0 }}
+            </div>
+        </div>
+    </article>
+
+    <article class="stat" style="--stat-color: #f59e0b">
+        <div class="stat__top">
+            <span class="stat__label">Open Orders</span>
+            <span class="stat__icon"><ion-icon name="hourglass-outline"></ion-icon></span>
+        </div>
+        <div>
+            <div class="stat__value">{{ draft_count|add:hold_count }}</div>
+            <div class="stat__foot">{{ draft_count }} draft &middot; {{ hold_count }} on hold</div>
+        </div>
+    </article>
+
+    <article class="stat" style="--stat-color: var(--danger)">
+        <div class="stat__top">
+            <span class="stat__label">Stock Alerts</span>
+            <span class="stat__icon"><ion-icon name="alert-circle-outline"></ion-icon></span>
+        </div>
+        <div>
+            <div class="stat__value">{{ low_count|add:out_count }}</div>
+            <div class="stat__foot">{{ low_count }} low &middot; {{ out_count }} out of {{ product_count }}</div>
+        </div>
+    </article>
+</section>
+
+
+<!---orders per day across the selected range -->
+
+<section class="panel">
+    <div class="toolbar">
+        <h2 class="page-title">Orders per day</h2>
+        <span class="chart__key"><i class="chart__swatch chart__swatch--total"></i> All orders</span>
+        <span class="chart__key"><i class="chart__swatch chart__swatch--placed"></i> Placed</span>
+        <div class="toolbar__spacer"></div>
+        <span class="muted">
+            avg {{ daily_avg }}/day
+            {% if busiest.count %}&middot; busiest {{ busiest.day|date:"j M" }} ({{ busiest.count }}){% endif %}
+            &middot; {{ units }} unit{{ units|pluralize }}
+        </span>
+    </div>
+
+    <div class="chart-wrap">
+        <!---y scale, so a bar height means something -->
+        <div class="chart__scale">
+            <span>{{ chart_peak }}</span>
+            <span>{{ chart_half }}</span>
+            <span>0</span>
+        </div>
+
+        <div class="chart">
+            <div class="chart__grid" aria-hidden="true"><i></i><i></i><i></i></div>
+
+            {% if daily_avg %}
+            <div class="chart__avg" style="bottom: {{ avg_pct }}%" title="Average {{ daily_avg }} orders/day">
+                <span>avg</span>
+            </div>
+            {% endif %}
+
+            {% if chart %}
+            <!---the svg stretches to any width; non-scaling-stroke keeps the
+                 line an even thickness instead of smearing horizontally -->
+            <svg class="chart__svg" viewBox="0 0 100 100" preserveAspectRatio="none"
+                 role="img" aria-label="Orders per day">
+                <path class="chart__area" d="{{ area_total }}" />
+                <polyline class="chart__line chart__line--total" points="{{ line_total }}"
+                          vector-effect="non-scaling-stroke" />
+                <polyline class="chart__line chart__line--placed" points="{{ line_placed }}"
+                          vector-effect="non-scaling-stroke" />
+            </svg>
+
+            <!---dots are HTML, not SVG: a circle would stretch into an ellipse
+                 under preserveAspectRatio="none" -->
+            <div class="chart__dots">
+                {% for point in chart %}
+                <span class="chart__dot{% if point.is_today %} is-today{% endif %}{% if not point.count %} is-zero{% endif %}"
+                      style="left: {{ point.x }}%; bottom: calc({{ point.pct_total|default:0 }}% )"
+                      title="{{ point.day|date:'D j M Y' }} — {{ point.count }} order{{ point.count|pluralize }}{% if point.placed %}, {{ point.placed }} placed{% endif %}{% if point.value %}, value {{ point.value|floatformat:0 }}{% endif %}"></span>
+                {% endfor %}
+            </div>
+
+            <div class="chart__ticks">
+                {% for point in chart %}
+                <span class="chart__tick{% if point.is_today %} is-today{% endif %}"
+                      style="left: {{ point.x }}%">{{ point.label }}</span>
+                {% endfor %}
+            </div>
+            {% else %}
+            <p class="muted">No orders in this range.</p>
+            {% endif %}
+        </div>
+    </div>
+</section>
+
+
+<div class="dash-split">
+
+    <!---what is selling -->
+    <section class="panel">
+        <div class="toolbar"><h2 class="page-title">Top products</h2></div>
+        <div class="table-wrap">
+            <table class="table table--mini">
+                <thead>
+                    <tr><th>Product</th><th class="num">Qty</th><th class="num">Value</th></tr>
+                </thead>
+                <tbody>
+                    {% for p in top_products %}
+                    <tr>
+                        <td>{{ p.product__name }}<br><small class="muted">{{ p.product__partno }}</small></td>
+                        <td class="num">{{ p.units }}</td>
+                        <td class="num">{{ p.value|floatformat:0 }}</td>
+                    </tr>
+                    {% empty %}
+                    <tr><td colspan="3" class="muted">No placed orders in this range.</td></tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </section>
+
+    {% if is_manager %}
+    <!---who is buying -->
+    <section class="panel">
+        <div class="toolbar"><h2 class="page-title">Top dealers</h2></div>
+        <div class="table-wrap">
+            <table class="table table--mini">
+                <thead>
+                    <tr><th>Dealer</th><th class="num">Orders</th><th class="num">Value</th></tr>
+                </thead>
+                <tbody>
+                    {% for d in top_dealers %}
+                    <tr>
+                        <td>{{ d.order__dealer__name }}</td>
+                        <td class="num">{{ d.orders }}</td>
+                        <td class="num">{{ d.value|floatformat:0 }}</td>
+                    </tr>
+                    {% empty %}
+                    <tr><td colspan="3" class="muted">No placed orders in this range.</td></tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </section>
+    {% else %}
+    <!---needs restocking -->
+    <section class="panel">
+        <div class="toolbar">
+            <h2 class="page-title">Running low</h2>
+            <div class="toolbar__spacer"></div>
+            <a class="btn btn--ghost btn--sm" href="{% url 'products:products' %}?status=low">View all</a>
+        </div>
+        <div class="table-wrap">
+            <table class="table table--mini">
+                <thead><tr><th>Product</th><th class="num">Stock</th></tr></thead>
+                <tbody>
+                    {% for p in low_stock %}
+                    <tr>
+                        <td><a href="{% url 'products:detail' p.pk %}">{{ p.name }}</a></td>
+                        <td class="num"><span class="badge badge--warning">{{ p.stock }}</span></td>
+                    </tr>
+                    {% empty %}
+                    <tr><td colspan="2" class="muted">Nothing is running low.</td></tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </section>
+    {% endif %}
+</div>
+
+
+<!---latest activity -->
+
+<section class="panel">
+    <div class="toolbar">
+        <h2 class="page-title">Recent orders</h2>
+        <div class="toolbar__spacer"></div>
+        <a class="btn btn--ghost btn--sm" href="{% url 'myorder:myorder' %}">All orders</a>
+    </div>
+
+    <div class="table-wrap">
+        <table class="table table--stack">
+            <thead>
+                <tr>
+                    <th>Order No</th>
+                    {% if is_manager %}<th>Dealer</th>{% endif %}
+                    <th class="hide-sm">Date</th>
+                    <th class="num">Items</th>
+                    <th class="num">Total</th>
+                    <th>Status</th>
+                    <th class="actions"><span class="sr-only">Open</span></th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for o in recent %}
+                <tr data-status="{{ o.status }}">
+                    <td data-label="Order No"><code class="dim">{{ o.order_no }}</code></td>
+                    {% if is_manager %}<td data-label="Dealer">{{ o.dealer.name }}</td>{% endif %}
+                    <td data-label="Date" class="hide-sm">{{ o.ordered_on|date:"j M Y" }}</td>
+                    <td data-label="Items" class="num">{{ o.total_qty }}</td>
+                    <td data-label="Total" class="num"><strong>{{ o.total_amount|floatformat:2 }}</strong></td>
+                    <td data-label="Status">
+                        <span class="badge badge--{% if o.is_draft %}warning{% elif o.is_hold %}info{% else %}success{% endif %}">
+                            {{ o.get_status_display }}
+                        </span>
+                    </td>
+                    <td class="actions">
+                        <a class="icon-btn icon-btn--view" href="{% url 'myorder:edit' o.pk %}"
+                           title="Open order" aria-label="Open {{ o.order_no }}">
+                            <ion-icon name="eye-outline"></ion-icon>
+                        </a>
+                    </td>
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="7">
+                        <div class="empty">
+                            <ion-icon name="receipt-outline"></ion-icon>
+                            <h3>No orders in this range</h3>
+                            <p>Widen the date range, or start a new order.</p>
+                        </div>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</section>
+
+{% endblock %}

@@ -1,0 +1,170 @@
+{% extends "reports/_report_base.html" %}
+
+{% comment %}
+14. Sales Executive Visit Report — who called on which dealer, when, and
+    from where.
+
+    Each visit is numbered within its dealer for the period, so "1st visit"
+    and "2nd visit" read at a glance. The map is one embedded OpenStreetMap
+    frame rather than one per row: a dozen iframes would make the page crawl,
+    and every row still has its own link straight to the spot.
+{% endcomment %}
+
+{% block report %}
+
+<!---everything the filter changes, swapped in as one region -->
+<div id="reportResults" data-live-region>
+
+<!---a strip of what the period came to -->
+<div class="age-strip">
+    <div class="age-band is-live">
+        <span class="age-band__label">Visits</span>
+        <span class="age-band__count">{{ totals.visits }}</span>
+        <span class="age-band__amount">over {{ totals.days }} day{{ totals.days|pluralize }}</span>
+    </div>
+    <div class="age-band{% if totals.dealers %} is-live{% endif %}">
+        <span class="age-band__label">Dealers seen</span>
+        <span class="age-band__count">{{ totals.dealers }}</span>
+        <span class="age-band__amount">distinct</span>
+    </div>
+    <div class="age-band{% if totals.executives %} is-live{% endif %}">
+        <span class="age-band__label">Executives</span>
+        <span class="age-band__count">{{ totals.executives }}</span>
+        <span class="age-band__amount">out in the field</span>
+    </div>
+    <div class="age-band{% if totals.located %} is-live{% endif %}">
+        <span class="age-band__label">With location</span>
+        <span class="age-band__count">{{ totals.located }}</span>
+        <span class="age-band__amount">of {{ totals.visits }} marked</span>
+    </div>
+</div>
+
+{% if focus %}
+<!---the most recent visit that carried coordinates -->
+<figure class="visit-map">
+    <iframe src="{{ focus.map_embed_url }}" loading="lazy"
+            title="Where {{ focus.sales_executive.name }} visited {{ focus.dealer.name }}"></iframe>
+    <figcaption>
+        <strong>{{ focus.dealer.name }}</strong>
+        &middot; {{ focus.sales_executive.name }}
+        &middot; {{ focus.visited_on|date:"j M Y" }}
+        &middot;
+        <a href="{{ focus.map_url }}" target="_blank" rel="noopener">
+            {{ focus.where }} <ion-icon name="open-outline"></ion-icon>
+        </a>
+    </figcaption>
+</figure>
+{% endif %}
+
+<div class="table-wrap table-wrap--tall">
+    <table class="table table--stack table--fixed">
+        <colgroup>
+            <col class="w-date"><col class="w-img"><col class="w-name">
+            <col class="w-name"><col class="w-status"><col class="w-name">
+            <col class="w-act">
+        </colgroup>
+        <thead>
+            <tr>
+                <th>Date</th>
+                <th class="hide-sm">Photo</th>
+                <th>Dealer</th>
+                <th class="hide-sm">Sales Executive</th>
+                <th>Visit</th>
+                <th class="hide-sm">Location</th>
+                <th class="actions">Map</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for visit in rows %}
+            <tr>
+                <td data-label="Date" class="cell-date">
+                    {{ visit.visited_on|date:"j M Y" }}
+                    <small class="muted">{{ visit.created_at|date:"H:i" }}</small>
+                </td>
+                <td data-label="Photo" class="hide-sm">
+                    <a href="{{ visit.photo.url }}" target="_blank" rel="noopener"
+                       title="Open the photo taken at the visit">
+                        <img class="cell-img" src="{{ visit.photo.url }}" alt="" loading="lazy">
+                    </a>
+                </td>
+                <td data-label="Dealer">
+                    <strong>{{ visit.dealer.name }}</strong>
+                    {% if visit.note %}<small class="muted">{{ visit.note }}</small>{% endif %}
+                </td>
+                <td data-label="Sales Executive" class="hide-sm">
+                    {{ visit.sales_executive.name }}
+                    <small class="muted">{{ visit.sales_executive.code }}</small>
+                </td>
+                <td data-label="Visit">
+                    <!---which call this was on that dealer, inside the period -->
+                    <span class="badge badge--{% if visit.visit_no == 1 %}success{% elif visit.visit_no == 2 %}info{% else %}neutral{% endif %}">
+                        {% if visit.visit_no == 1 %}1st visit
+                        {% elif visit.visit_no == 2 %}2nd visit
+                        {% elif visit.visit_no == 3 %}3rd visit
+                        {% else %}{{ visit.visit_no }}th visit{% endif %}
+                    </span>
+                </td>
+                <td data-label="Location" class="hide-sm">
+                    {% if visit.has_location %}
+                    <!---the place name if one was found when the visit was
+                         marked; the coordinates underneath either way -->
+                    {% if visit.place %}<strong>{{ visit.place }}</strong>{% endif %}
+                    <small class="muted">{{ visit.coordinates }}{% if visit.accuracy_m %} &middot; ±{{ visit.accuracy_m }} m{% endif %}</small>
+                    {% else %}
+                    <span class="muted">&mdash;</span>
+                    {% endif %}
+                </td>
+                <td data-label="Map" class="actions">
+                    {% if visit.has_location %}
+                    <a class="icon-btn icon-btn--view" href="{{ visit.map_url }}"
+                       target="_blank" rel="noopener"
+                       title="Open this spot in Google Maps"
+                       aria-label="Map for the visit to {{ visit.dealer.name }}">
+                        <ion-icon name="location-outline"></ion-icon>
+                    </a>
+                    {% else %}
+                    <span class="muted">&mdash;</span>
+                    {% endif %}
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+
+        {% if rows %}
+        <tfoot>
+            <tr>
+                <td><strong>Total</strong></td>
+                <td class="hide-sm"></td>
+                <td><strong>{{ totals.dealers }}</strong> dealer{{ totals.dealers|pluralize }}</td>
+                <td class="hide-sm"></td>
+                <td><strong>{{ totals.visits }}</strong> visit{{ totals.visits|pluralize }}</td>
+                <td class="hide-sm"></td>
+                <td></td>
+            </tr>
+        </tfoot>
+        {% endif %}
+    </table>
+</div>
+
+{% if not rows %}
+<div class="empty">
+    <ion-icon name="map-outline"></ion-icon>
+    <h3>No visits in this period</h3>
+</div>
+{% endif %}
+
+<div class="panel__foot">
+    <div class="pagination">
+        <span class="muted">
+            <strong>{{ totals.visits }}</strong> visit{{ totals.visits|pluralize }}
+            &middot; <strong>{{ totals.dealers }}</strong> dealer{{ totals.dealers|pluralize }}
+            &middot; <strong>{{ totals.located }}</strong> with a location
+            &middot; {{ label }}
+        </span>
+        {% include "_pagination.html" %}
+    </div>
+</div>
+
+</div><!--- /#reportResults -->
+
+{% endblock %}

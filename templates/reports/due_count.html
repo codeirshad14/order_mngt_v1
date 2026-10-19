@@ -1,0 +1,116 @@
+{% extends "reports/_report_base.html" %}
+
+{% comment %}
+4. Order Book Due Count Details — how old every unpaid balance is, counted
+   and totalled by ageing bucket.
+{% endcomment %}
+
+{% block report %}
+
+<!---everything the filter changes, swapped in as one region -->
+<div id="reportResults" data-live-region>
+
+<!---the count and the money in each ageing band, above the detail -->
+<div class="age-strip">
+    {% for band in summary %}
+    <div class="age-band{% if band.count %} is-live{% endif %}">
+        <span class="age-band__label">{{ band.label }}</span>
+        <span class="age-band__count">{{ band.count }}</span>
+        <span class="age-band__amount">{{ band.amount }}</span>
+    </div>
+    {% endfor %}
+</div>
+
+<div class="table-wrap table-wrap--tall">
+    <table class="table table--stack table--fixed">
+        <colgroup>
+            <col class="w-orderno">
+            {% if is_manager %}<col class="w-name">{% endif %}
+            <col class="w-date"><col class="w-name"><col class="w-qty"><col class="w-status">
+            <col class="w-money"><col class="w-money"><col class="w-money">
+        </colgroup>
+        <thead>
+            <tr>
+                <th>Order No</th>
+                {% if is_manager %}<th>Dealer</th>{% endif %}
+                <th class="hide-sm">Ordered</th>
+                <th class="hide-sm">Raised By</th>
+                <th class="num">Age</th>
+                <th>Bucket</th>
+                <th class="num hide-sm">Order Total</th>
+                <th class="num hide-sm">Received</th>
+                <th class="num">Balance Due</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for row in rows %}
+            <tr>
+                <td data-label="Order No" class="cell-orderno">
+                    <a class="order-ref" href="{% url 'myorder:edit' row.order.pk %}"
+                       title="View order {{ row.order.order_no }}">
+                        <code class="dim">{{ row.order.order_no }}</code>
+                        <ion-icon name="eye-outline" aria-hidden="true"></ion-icon>
+                    </a>
+                </td>
+                {% if is_manager %}<td data-label="Dealer">{{ row.order.dealer.name }}</td>{% endif %}
+                <td data-label="Ordered" class="hide-sm cell-date">{{ row.order.ordered_on|date:"j M Y" }}</td>
+                <!---display only: tells a salesman's order from one the dealer placed -->
+                <td data-label="Raised By" class="hide-sm">
+                    {% if row.order.is_direct %}
+                    <span class="muted">Dealer</span>
+                    {% else %}
+                    {{ row.order.sales_executive.name }}
+                    {% endif %}
+                </td>
+                <td data-label="Age" class="num">{{ row.days }}d</td>
+                <td data-label="Bucket">
+                    <!---the older the debt, the louder the badge -->
+                    <span class="badge badge--{% if row.days > 90 %}danger{% elif row.days > 60 %}warning{% elif row.days > 30 %}info{% else %}neutral{% endif %}">
+                        {{ row.bucket }}
+                    </span>
+                </td>
+                <td data-label="Order Total" class="num hide-sm">{{ row.total }}</td>
+                <td data-label="Received" class="num hide-sm">{{ row.paid }}</td>
+                <td data-label="Balance Due" class="num"><strong>{{ row.balance }}</strong></td>
+            </tr>
+            {% endfor %}
+        </tbody>
+
+        {% if rows %}
+        <tfoot>
+            <tr>
+                <td{% if is_manager %} colspan="2"{% endif %}><strong>Total</strong></td>
+                <td class="hide-sm"></td>
+                <td class="hide-sm"></td>
+                <td class="num"><strong>{{ totals.count }}</strong></td>
+                <td></td>
+                <td class="num hide-sm"><strong>{{ totals.order_total }}</strong></td>
+                <td class="num hide-sm"><strong>{{ totals.paid }}</strong></td>
+                <td class="num"><strong>{{ totals.balance }}</strong></td>
+            </tr>
+        </tfoot>
+        {% endif %}
+    </table>
+</div>
+
+{% if not rows %}
+<div class="empty">
+    <ion-icon name="happy-outline"></ion-icon>
+    <h3>Nothing overdue</h3>
+</div>
+{% endif %}
+
+<div class="panel__foot">
+    <div class="pagination">
+        <span class="muted">
+            <strong>{{ totals.count }}</strong> due order{{ totals.count|pluralize }}
+            &middot; <strong>{{ totals.balance }}</strong> outstanding
+            &middot; oldest first &middot; {{ label }}
+        </span>
+        {% include "_pagination.html" %}
+    </div>
+</div>
+
+</div><!--- /#reportResults -->
+
+{% endblock %}

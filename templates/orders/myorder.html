@@ -1,0 +1,271 @@
+
+{% extends "mybase.html" %}
+{% load static %}
+
+{% block title %}My Orders{% endblock %}
+
+{% block page_path %}Order{% endblock %}
+
+{% block page_title %}All Order{% endblock %}
+
+
+{% block content %}
+
+<div class="page-head__actions">
+    <a class="btn btn--primary" href="{% url 'myorder:catalogue' %}">
+        <ion-icon name="cart-outline"></ion-icon> New Order
+    </a>
+</div>
+
+</div>
+
+
+
+<!---Order records, this dealer only -->
+
+<section class="panel">
+    <div class="toolbar">
+        <div class="search">
+            <ion-icon name="search-outline"></ion-icon>
+            <input type="search" placeholder="Filter orders…" aria-label="Filter orders"
+                data-search-target="#ordersTable">
+        </div>
+        <!---each link keeps the dealer and date range that are already set -->
+        <div class="segment" role="group" aria-label="Filter by status">
+            <a class="btn btn--sm {% if status == 'all' %}is-active{% endif %}"
+               href="?{{ keep }}">All</a>
+            <a class="btn btn--sm {% if status == 'draft' %}is-active{% endif %}"
+               href="?status=draft{% if keep %}&{{ keep }}{% endif %}">Draft</a>
+            <a class="btn btn--sm {% if status == 'hold' %}is-active{% endif %}"
+               href="?status=hold{% if keep %}&{{ keep }}{% endif %}">On hold</a>
+            <a class="btn btn--sm {% if status == 'final' %}is-active{% endif %}"
+               href="?status=final{% if keep %}&{{ keep }}{% endif %}">Final</a>
+        </div>
+        <!---date range; either end may be left blank -->
+        <form method="get" class="range-filter">
+            {% if status != 'all' %}<input type="hidden" name="status" value="{{ status }}">{% endif %}
+            {% if is_manager %}
+            <select class="select" name="dealer" aria-label="Filter by dealer">
+                <option value="">All dealers</option>
+                {% for d in dealers %}
+                <option value="{{ d.pk }}" {% if dealer_id == d.pk|stringformat:"s" %}selected{% endif %}>{{ d.name }}</option>
+                {% endfor %}
+            </select>
+            {% endif %}
+
+            <!---one compact control: calendar, from – to -->
+            <span class="range-filter__dates">
+                <ion-icon name="calendar-outline"></ion-icon>
+                <input class="input" type="date" id="dateFrom" name="from"
+                       value="{{ date_from }}" aria-label="From date">
+                <span class="range-filter__dash">&ndash;</span>
+                <input class="input" type="date" id="dateTo" name="to"
+                       value="{{ date_to }}" aria-label="To date">
+            </span>
+
+            <button class="btn btn--primary btn--sm" type="submit"
+                    title="Apply filter" aria-label="Apply filter">
+                <ion-icon name="funnel-outline"></ion-icon>
+            </button>
+
+            {% if date_from or date_to or dealer_id %}
+            <a class="btn btn--ghost btn--sm" title="Clear filter" aria-label="Clear filter"
+               href="{% if status != 'all' %}?status={{ status }}{% else %}?{% endif %}">
+                <ion-icon name="close-outline"></ion-icon>
+            </a>
+            {% endif %}
+        </form>
+
+        <div class="toolbar__spacer"></div>
+
+        <!---exports the filtered list, not everything -->
+        <details class="export-menu">
+            <summary class="btn btn--ghost btn--sm">
+                <ion-icon name="download-outline"></ion-icon> Export
+                <ion-icon name="chevron-down-outline"></ion-icon>
+            </summary>
+            <div class="menu__panel export-menu__panel">
+                <a class="menu__item" href="{% url 'myorder:export' 'pdf' %}{% if query %}?{{ query }}{% endif %}">
+                    <ion-icon name="document-text-outline"></ion-icon> PDF
+                </a>
+                <a class="menu__item" href="{% url 'myorder:export' 'csv' %}{% if query %}?{{ query }}{% endif %}">
+                    <ion-icon name="document-outline"></ion-icon> CSV
+                </a>
+                <a class="menu__item" href="{% url 'myorder:export' 'excel' %}{% if query %}?{{ query }}{% endif %}">
+                    <ion-icon name="grid-outline"></ion-icon> Excel
+                </a>
+            </div>
+        </details>
+
+        <span class="muted">
+            {% if is_manager %}<span class="badge badge--info">Management</span>{% else %}{{ dealer.name }}{% endif %}
+        </span>
+    </div>
+
+    <div class="table-wrap table-wrap--tall">
+        <!---widths set here so the figures line up down the page instead of
+             each column sizing itself to whatever the widest cell holds -->
+        <table class="table table--stack table--fixed" id="ordersTable">
+            <!---the order number is a 13-character code and needs more room
+                 than the figures beside it; everything else gives some back -->
+            <!---Net and GST are not columns here any more: three money columns
+                 side by side left the dealer's name squeezed into a narrow strip
+                 and wrapping. Total is what this table is read for; the split is
+                 still on the order itself and on the invoice, and the exports
+                 carry all three. w-dealer gives the freed width to the name. -->
+            <colgroup>
+                <col class="w-no">
+                <col class="w-orderno">
+                {% if is_manager %}<col class="w-dealer">{% endif %}
+                <col class="w-date"><col class="w-name"><col class="w-qty">
+                <col class="w-money">
+                <col class="w-status"><col class="w-act w-act--wide">
+            </colgroup>
+            <thead>
+                <tr>
+                    <!---row number, the way the product table does it -->
+                    <th class="num hide-sm cell-no">#</th>
+                    <th>Order No</th>
+                    {% if is_manager %}<th>Dealer</th>{% endif %}
+                    <th class="hide-sm">Date</th>
+                    <th class="hide-sm">Raised By</th>
+                    <th class="num">Items</th>
+                    <th class="num">Total</th>
+                    <th>Status</th>
+                    <!---a visible heading now that the row actions are icons
+                         with no text of their own, the way Products does it -->
+                    <th class="actions">Action</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for o in orders %}
+                <tr data-status="{{ o.status }}">
+                    <!---keeps counting across pages: 101, 102 … not 1, 2 again -->
+                    <td data-label="#" class="num hide-sm muted cell-no">
+                        {{ forloop.counter0|add:page.start_index }}
+                    </td>
+                    <td data-label="Order No" class="cell-orderno"><code class="dim">{{ o.order_no }}</code></td>
+                    {% if is_manager %}<td data-label="Dealer">{{ o.dealer.name }}</td>{% endif %}
+                    <td data-label="Date" class="hide-sm cell-date">{{ o.ordered_on|date:"j M Y" }}</td>
+                    <!---display only: tells a salesman's order from one the dealer placed -->
+                    <td data-label="Raised By" class="hide-sm">
+                        {% if o.is_direct %}
+                        <span class="muted">Dealer</span>
+                        {% else %}
+                        {{ o.sales_executive.name }}
+                        {% endif %}
+                    </td>
+                    <!---data-sum: the search box hides rows in the browser, so
+                         the totals row re-adds whatever is still visible -->
+                    <td data-label="Items" class="num" data-sum="qty">{{ o.total_qty }}</td>
+                    <td data-label="Total" class="num" data-sum="amount"><strong>{{ o.total_amount }}</strong></td>
+                    <td data-label="Status">
+                        <span class="badge badge--{% if o.is_draft %}warning{% elif o.is_hold %}info{% else %}success{% endif %}">
+                            {{ o.get_status_display }}
+                        </span>
+                    </td>
+                    <!---icon only, so all three fit on one line in the column.
+                         Each carries a title for the tooltip and an aria-label
+                         naming the order, since the icon is the only label. -->
+                    <td data-label="Action" class="actions">
+                        <div class="row-actions">
+                            {% if o.can_resume %}
+                            <form method="post" action="{% url 'myorder:resume' o.pk %}">
+                                {% csrf_token %}
+                                <button class="icon-btn icon-btn--resume" type="submit"
+                                        title="Continue this order"
+                                        aria-label="Continue order {{ o.order_no }}">
+                                    <ion-icon name="play-outline"></ion-icon>
+                                </button>
+                            </form>
+                            {% endif %}
+
+                            {% if o.is_draft %}
+                            <a class="icon-btn icon-btn--view" href="{% url 'myorder:edit' o.pk %}"
+                               title="Edit this order" aria-label="Edit order {{ o.order_no }}">
+                                <ion-icon name="create-outline"></ion-icon>
+                            </a>
+                            {% else %}
+                            <a class="icon-btn icon-btn--view" href="{% url 'myorder:edit' o.pk %}"
+                               title="View this order" aria-label="View order {{ o.order_no }}">
+                                <ion-icon name="eye-outline"></ion-icon>
+                            </a>
+                            {% endif %}
+
+                            {% if o.status == 'final' %}
+                            <a class="icon-btn icon-btn--print" href="{% url 'myorder:print' o.pk %}"
+                               target="_blank" title="Print invoice"
+                               aria-label="Print invoice for order {{ o.order_no }}">
+                                <ion-icon name="print-outline"></ion-icon>
+                            </a>
+                            {% endif %}
+                        </div>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+
+            {% if orders %}
+            <!---Totals for whatever the filter left on screen. The figures
+                 come from the server, so they cover every filtered order;
+                 data-sum-total lets the browser re-add them when the search
+                 box hides rows. -->
+            <tfoot>
+                <tr>
+                    <!---absorbs the # column and, for a manager, the dealer
+                         column too, so the figures stay under their headings -->
+                    <td colspan="{% if is_manager %}3{% else %}2{% endif %}"><strong>Total</strong></td>
+                    <td class="hide-sm"></td>
+                    <td class="hide-sm"></td>
+                    <td class="num" data-sum-total="qty"><strong>{{ totals.qty }}</strong></td>
+                    <td class="num" data-sum-total="amount"><strong>{{ totals.amount }}</strong></td>
+                    <td></td>
+                    <td></td>
+                </tr>
+            </tfoot>
+            {% endif %}
+        </table>
+    </div>
+
+    <!---outside the table, the way the product list does it: no colspan to keep
+         in step with the columns, and the empty state gets the full width -->
+    {% if not page.object_list %}
+    <div class="empty">
+        <ion-icon name="receipt-outline"></ion-icon>
+        <h3>No orders found</h3>
+        <p>
+            {% if status != "all" or dealer_id or sales_id or date_from or date_to %}
+            Nothing matches that filter. Clear it to see every order.
+            {% else %}
+            Start a new order to add products to your cart.
+            {% endif %}
+        </p>
+    </div>
+    {% endif %}
+
+    <div class="panel__foot">
+        <div class="pagination">
+            <span class="muted">
+                Showing <strong data-visible-count>{{ page.start_index }}&ndash;{{ page.end_index }}</strong>
+                of <strong>{{ totals.count }}</strong> order{{ totals.count|pluralize }}
+                <!---net and GST are no longer columns, so the totals for them
+                     are given here instead of being lost from the page -->
+                &middot; net <strong>{{ totals.net }}</strong>
+                &middot; GST <strong>{{ totals.gst }}</strong>
+                &middot; <strong>{{ totals.amount }}</strong> in total
+            </span>
+
+            <!---page size: 100 at a time, or everything at once -->
+            <div class="segment segment--sm" role="group" aria-label="Page size">
+                <a class="{% if not show_all %}is-active{% endif %}"
+                   href="?{% if base_query %}{{ base_query }}{% endif %}">100 / page</a>
+                <a class="{% if show_all %}is-active{% endif %}"
+                   href="?per_page=all{% if base_query %}&{{ base_query }}{% endif %}">Show all</a>
+            </div>
+
+            {% include "_pagination.html" %}
+        </div>
+    </div>
+</section>
+
+{% endblock %}

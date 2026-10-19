@@ -1,0 +1,72 @@
+{% extends "mybase.html" %}
+{% load static %}
+
+{% block title %}Catelogs{% endblock %}
+
+{% block page_path %}Catelogs{% endblock %}
+
+{% block page_title %}All Catelogs{% endblock %}
+
+
+{% block content %}
+
+<div class="page-head__actions">
+    <a class="btn btn--ghost" href="{% url 'catelog:new_arrival' %}">
+        <ion-icon name="sparkles-outline"></ion-icon> New Arrivals
+    </a>
+</div>
+
+</div>
+
+
+<section class="panel">
+    <div class="toolbar">
+        <div class="search">
+            <ion-icon name="search-outline"></ion-icon>
+            <input type="search" placeholder="Filter catelogs…" aria-label="Filter catelogs"
+                data-search-target="#catelogGrid">
+        </div>
+        <div class="toolbar__spacer"></div>
+        <span class="muted"><span data-visible-count>{{ catelogs|length }}</span> of {{ catelogs|length }} catelog{{ catelogs|length|pluralize }}</span>
+    </div>
+
+    <!---click a catelog to see the products inside it -->
+    <div class="product-grid" id="catelogGrid">
+        {% for c in catelogs %}
+        <a class="product-card" href="{% url 'catelog:detail' c.pk %}">
+            <span class="product-card__media">
+                <img src="{% if c.cover_url %}{{ c.cover_url }}{% else %}{% static 'assets/imgs/product-placeholder.png' %}{% endif %}"
+                     alt="{{ c.name }}" loading="lazy">
+            </span>
+
+            <span class="product-card__main">
+                <span class="product-card__body">
+                    <strong class="product-card__name">{{ c.name }}</strong>
+                    <small class="muted">{{ c.product_count }} product{{ c.product_count|pluralize }}</small>
+                    {% if c.new_arrival_count %}
+                    <span class="badge badge--info">{{ c.new_arrival_count }} new</span>
+                    {% endif %}
+                </span>
+                <span class="btn btn--ghost btn--sm">
+                    <ion-icon name="eye-outline"></ion-icon> Open Catelog
+                </span>
+            </span>
+        </a>
+        {% empty %}
+        <div class="empty">
+            <ion-icon name="albums-outline"></ion-icon>
+            <h3>No catelogs yet</h3>
+            <p>Create one in the admin and pick the products it should hold.</p>
+        </div>
+        {% endfor %}
+    </div>
+
+    <!---shown when the filter above hides every card -->
+    <div class="empty" data-empty hidden>
+        <ion-icon name="search-outline"></ion-icon>
+        <h3>No catelogs match</h3>
+        <p>Nothing matches what you typed. Clear the box to see them all.</p>
+    </div>
+</section>
+
+{% endblock %}

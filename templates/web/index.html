@@ -1,0 +1,414 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+
+    <title>{{ company.name|default:"Order Mgmt" }}</title>
+    <meta name="description"
+          content="{{ company.name|default:'Order Mgmt' }} — wholesale ordering for our dealers.">
+
+    <!---the company logo doubles as the tab icon -->
+    {% if company.logo %}
+    <link rel="icon" href="{{ company.logo.url }}">
+    <link rel="apple-touch-icon" href="{{ company.logo.url }}">
+    {% endif %}
+
+    <!---the app's own stylesheet first, purely for its design tokens: the
+         same colours, spacing scale, radii and dark mode the dashboard uses.
+         web.css then lays out the page itself. -->
+    <link rel="stylesheet" href="{% static 'assets/css/style.css' %}">
+    <link rel="stylesheet" href="{% static 'assets/css/web.css' %}">
+
+    <!---set the theme before first paint so dark mode never flashes white -->
+    <script>
+        try {
+            var t = localStorage.getItem("om-theme");
+            document.documentElement.setAttribute("data-theme",
+                t || (matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light"));
+        } catch (e) { }
+    </script>
+</head>
+
+<body class="web">
+
+<!---the target for "Home". It has to be its own element up here, not an id
+     on the navbar below: the navbar is position:sticky, so it is already in
+     view at every scroll position and jumping to it does nothing at all. -->
+<span id="top"></span>
+
+<!-- ====================================================== top navbar -->
+<header class="web-nav">
+    <div class="web-wrap web-nav__inner">
+
+        <!---logo on the left: the company's own if one is uploaded -->
+        <a class="web-brand" href="#top">
+            {% if company.logo %}
+            <img class="web-brand__logo" src="{{ company.logo.url }}"
+                 alt="{{ company.name }}">
+            {% else %}
+            <span class="web-brand__mark"><ion-icon name="cube"></ion-icon></span>
+            {% endif %}
+            <span class="web-brand__name">{{ company.name|default:"Order Mgmt" }}</span>
+        </a>
+
+        <!---the menu. On a phone it collapses behind the button below. -->
+        <nav class="web-menu" id="webMenu" aria-label="Main">
+            <a href="#top">Home</a>
+            <a href="#about">About Us</a>
+            <a href="#products">Product</a>
+            <a href="#contact">Contact Us</a>
+        </nav>
+
+        <div class="web-nav__actions">
+            <button class="icon-btn" id="webTheme" type="button" aria-label="Toggle dark mode">
+                <ion-icon name="moon-outline"></ion-icon>
+            </button>
+
+            {% if user.is_authenticated %}
+            <a class="btn btn--primary btn--sm" href="{% url 'dashboard:dashboard' %}">
+                <ion-icon name="grid-outline"></ion-icon> Dashboard
+            </a>
+            {% else %}
+            <a class="btn btn--primary btn--sm" href="{% url 'login' %}">
+                <ion-icon name="log-in-outline"></ion-icon> Log in
+            </a>
+            {% endif %}
+
+            <button class="icon-btn web-burger" id="webBurger" type="button"
+                    aria-label="Menu" aria-expanded="false" aria-controls="webMenu">
+                <ion-icon name="menu-outline"></ion-icon>
+            </button>
+        </div>
+    </div>
+</header>
+
+
+<!-- =========================================================== hero -->
+<section class="web-hero">
+    <div class="web-wrap web-hero__inner">
+        <div class="web-hero__text">
+            <span class="badge badge--info">Wholesale ordering</span>
+            <h1>
+                {{ company.name|default:"Order Mgmt" }}
+                <span>ordering, without the phone calls.</span>
+            </h1>
+            <p>
+                Browse the catalogue, place an order and track what you owe —
+                all in one place. Your dealer account shows live stock, GST
+                worked out per line, and a printable invoice the moment an
+                order is placed.
+            </p>
+
+            <div class="web-hero__cta">
+                <a class="btn btn--primary" href="{% url 'login' %}">
+                    <ion-icon name="log-in-outline"></ion-icon> Dealer Log in
+                </a>
+                <a class="btn btn--ghost" href="#products">
+                    <ion-icon name="albums-outline"></ion-icon> See Products
+                </a>
+            </div>
+
+            {% if company.working_hours %}
+            <p class="web-hero__hours">
+                <ion-icon name="time-outline"></ion-icon> {{ company.working_hours }}
+            </p>
+            {% endif %}
+        </div>
+
+        <!---honest numbers, straight from the catalogue -->
+        <div class="web-stats">
+            <div class="web-stat">
+                <strong>{{ stats.products }}</strong>
+                <span>Products</span>
+            </div>
+            <div class="web-stat">
+                <strong>{{ stats.brands }}</strong>
+                <span>Brands</span>
+            </div>
+            <div class="web-stat">
+                <strong>{{ stats.catelogs }}</strong>
+                <span>Catalogues</span>
+            </div>
+        </div>
+    </div>
+</section>
+
+
+<!-- ========================================================== about -->
+<section class="web-section" id="about">
+    <div class="web-wrap">
+        <h2 class="web-title">{{ about.title|default:"About Us" }}</h2>
+
+        <div class="web-about">
+            <div class="web-about__text">
+                {% if about.description %}
+                <!---written in the admin's rich-text editor, so it is HTML -->
+                {{ about.description|safe }}
+                {% else %}
+                <p>
+                    We supply our dealer network with a catalogue kept current
+                    day to day. Orders placed here reach us straight away,
+                    priced with GST already worked out, so there is nothing to
+                    confirm twice.
+                </p>
+                {% endif %}
+            </div>
+
+            <ul class="web-points">
+                <li>
+                    <ion-icon name="pricetags-outline"></ion-icon>
+                    <div>
+                        <strong>Live prices and stock</strong>
+                        <span>What you see is what is on the shelf right now.</span>
+                    </div>
+                </li>
+                <li>
+                    <ion-icon name="receipt-outline"></ion-icon>
+                    <div>
+                        <strong>GST worked out per line</strong>
+                        <span>CGST, SGST or IGST, and an invoice ready to print.</span>
+                    </div>
+                </li>
+                <li>
+                    <ion-icon name="wallet-outline"></ion-icon>
+                    <div>
+                        <strong>Your account, always visible</strong>
+                        <span>Every order, payment and balance in one ledger.</span>
+                    </div>
+                </li>
+            </ul>
+        </div>
+    </div>
+</section>
+
+
+<!-- ======================================================= products -->
+<section class="web-section web-section--tint" id="products">
+    <div class="web-wrap">
+        <h2 class="web-title">Products</h2>
+        <p class="web-lede">A few of what we carry. Log in to see the full catalogue with your prices.</p>
+
+        <div class="web-grid">
+            {% for p in products %}
+            <article class="web-card">
+                <div class="web-card__shot">
+                    <img src="{{ p.front_url }}" alt="{{ p.name }}" loading="lazy">
+                </div>
+                <div class="web-card__body">
+                    <strong>{{ p.name }}</strong>
+                    <small>{{ p.brand }}</small>
+                    <span class="web-card__price">
+                        {{ p.price_including_gst }}
+                        <small>incl. GST &middot; per {{ p.unit }}</small>
+                    </span>
+                </div>
+            </article>
+            {% empty %}
+            <div class="empty">
+                <ion-icon name="cube-outline"></ion-icon>
+                <h3>Catalogue coming soon</h3>
+            </div>
+            {% endfor %}
+        </div>
+
+        {% if catelogs %}
+        <div class="web-chips">
+            <span class="muted">Catalogues:</span>
+            {% for c in catelogs %}
+            <span class="badge badge--neutral">{{ c.name }}</span>
+            {% endfor %}
+        </div>
+        {% endif %}
+
+        <div class="web-more">
+            <a class="btn btn--primary" href="{% url 'login' %}">
+                <ion-icon name="log-in-outline"></ion-icon> Log in to order
+            </a>
+        </div>
+    </div>
+</section>
+
+
+<!-- ======================================================== contact -->
+<section class="web-section" id="contact">
+    <div class="web-wrap">
+        <h2 class="web-title">Contact Us</h2>
+
+        <div class="web-contact">
+            <ul class="web-contact__list">
+                {% if company.address %}
+                <li>
+                    <ion-icon name="location-outline"></ion-icon>
+                    <div>
+                        <strong>Address</strong>
+                        <span>{{ company.address }}</span>
+                    </div>
+                </li>
+                {% endif %}
+                {% if company.phone or company.mobile %}
+                <li>
+                    <ion-icon name="call-outline"></ion-icon>
+                    <div>
+                        <strong>Phone</strong>
+                        <span>
+                            {% if company.phone %}<a href="tel:{{ company.phone }}">{{ company.phone }}</a>{% endif %}
+                            {% if company.mobile %} &middot; <a href="tel:{{ company.mobile }}">{{ company.mobile }}</a>{% endif %}
+                        </span>
+                    </div>
+                </li>
+                {% endif %}
+                {% if company.whatsapp %}
+                <li>
+                    <ion-icon name="logo-whatsapp"></ion-icon>
+                    <div>
+                        <strong>WhatsApp</strong>
+                        <span><a href="https://wa.me/91{{ company.whatsapp }}" target="_blank" rel="noopener">{{ company.whatsapp }}</a></span>
+                    </div>
+                </li>
+                {% endif %}
+                {% if company.email %}
+                <li>
+                    <ion-icon name="mail-outline"></ion-icon>
+                    <div>
+                        <strong>Email</strong>
+                        <span><a href="mailto:{{ company.email }}">{{ company.email }}</a></span>
+                    </div>
+                </li>
+                {% endif %}
+                {% if company.working_hours %}
+                <li>
+                    <ion-icon name="time-outline"></ion-icon>
+                    <div>
+                        <strong>Hours</strong>
+                        <span>{{ company.working_hours }}</span>
+                    </div>
+                </li>
+                {% endif %}
+            </ul>
+
+            {% if company.map_embed_url %}
+            <div class="web-map">
+                <iframe src="{{ company.map_embed_url }}" loading="lazy"
+                        title="Where to find {{ company.name }}"></iframe>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</section>
+
+
+<!-- ========================================================= footer -->
+<footer class="web-foot">
+    <div class="web-wrap web-foot__inner">
+        <span class="web-foot__brand">
+            {% if company.logo %}
+            <img class="web-foot__logo" src="{{ company.logo.url }}" alt="{{ company.name }}">
+            {% endif %}
+            &copy; {% now "Y" %} {{ company.name|default:"Order Mgmt" }}. All rights reserved.
+        </span>
+
+        <span class="web-foot__links">
+            <a href="#top">Home</a>
+            <a href="#about">About</a>
+            <a href="#products">Product</a>
+            <a href="#contact">Contact</a>
+            <a href="{% url 'login' %}">Log in</a>
+        </span>
+
+        {% if company.facebook or company.instagram or company.linkedin or company.youtube %}
+        <span class="web-social">
+            {% if company.facebook %}<a href="{{ company.facebook }}" target="_blank" rel="noopener" aria-label="Facebook"><ion-icon name="logo-facebook"></ion-icon></a>{% endif %}
+            {% if company.instagram %}<a href="{{ company.instagram }}" target="_blank" rel="noopener" aria-label="Instagram"><ion-icon name="logo-instagram"></ion-icon></a>{% endif %}
+            {% if company.linkedin %}<a href="{{ company.linkedin }}" target="_blank" rel="noopener" aria-label="LinkedIn"><ion-icon name="logo-linkedin"></ion-icon></a>{% endif %}
+            {% if company.youtube %}<a href="{{ company.youtube }}" target="_blank" rel="noopener" aria-label="YouTube"><ion-icon name="logo-youtube"></ion-icon></a>{% endif %}
+        </span>
+        {% endif %}
+    </div>
+
+    <!---who looks after the site, and how to reach them. A second row of its
+         own so it reads as a credit rather than part of the site's own nav. -->
+    <div class="web-wrap web-foot__by">
+        <span>
+            Maintained by
+            <a href="https://www.initiatorsolutions.com/" target="_blank" rel="noopener">
+                Initiator Solutions
+            </a>
+        </span>
+
+        <span class="web-foot__contact">
+            <a href="tel:+918882595800">
+                <ion-icon name="call-outline"></ion-icon> +91 88825 95800
+            </a>
+            <a href="mailto:info@initiatorsolutions.com">
+                <ion-icon name="mail-outline"></ion-icon> info@initiatorsolutions.com
+            </a>
+        </span>
+    </div>
+</footer>
+
+
+<!---appears once you have scrolled down; takes you back to the top -->
+<a class="web-up" id="webUp" href="#top" aria-label="Back to top">
+    <ion-icon name="arrow-up-outline"></ion-icon>
+</a>
+
+
+<script>
+    /* Three small things, inline because this page loads no other script:
+       the phone menu, the back-to-top button, and the same dark-mode switch
+       the app uses (it reads and writes the same localStorage key, so the
+       theme follows you in). */
+    (function () {
+        var burger = document.getElementById("webBurger");
+        var menu = document.getElementById("webMenu");
+
+        burger.addEventListener("click", function () {
+            var open = menu.classList.toggle("is-open");
+            burger.setAttribute("aria-expanded", String(open));
+        });
+
+        // tapping a link closes the menu behind you
+        menu.addEventListener("click", function (e) {
+            if (e.target.tagName === "A") {
+                menu.classList.remove("is-open");
+                burger.setAttribute("aria-expanded", "false");
+            }
+        });
+
+        /* show the back-to-top button only once there is something to go
+           back up from */
+        var up = document.getElementById("webUp");
+
+        function showUp() {
+            up.classList.toggle("is-on", window.scrollY > 400);
+        }
+        showUp();
+        window.addEventListener("scroll", showUp, { passive: true });
+
+        var toggle = document.getElementById("webTheme");
+        var icon = toggle.querySelector("ion-icon");
+
+        function paint() {
+            var dark = document.documentElement.getAttribute("data-theme") === "dark";
+            icon.setAttribute("name", dark ? "sunny-outline" : "moon-outline");
+        }
+        paint();
+
+        toggle.addEventListener("click", function () {
+            var dark = document.documentElement.getAttribute("data-theme") === "dark";
+            var next = dark ? "light" : "dark";
+            document.documentElement.setAttribute("data-theme", next);
+            try { localStorage.setItem("om-theme", next); } catch (e) { }
+            paint();
+        });
+    })();
+</script>
+
+<script type="module" src="https://unpkg.com/ionicons@5.5.2/dist/ionicons/ionicons.esm.js"></script>
+<script nomodule src="https://unpkg.com/ionicons@5.5.2/dist/ionicons/ionicons.js"></script>
+</body>
+
+</html>

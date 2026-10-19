@@ -1,0 +1,30 @@
+{% comment %}
+The half of the shop toolbar that changes when the filter changes: the stock
+segment, the Clear button and the count. The search box itself is deliberately
+left out — replacing it mid-type would eat the caret.
+
+A live-region wrapper is display:contents, so these stay direct flex children
+of .toolbar exactly as they were before the swap.
+{% endcomment %}
+
+<div id="shopFilters" data-live-region>
+    <div class="segment" role="group" aria-label="Filter by stock">
+        <a class="{% if status == 'all' and not search %}is-active{% endif %}" href="?">All</a>
+        <a class="{% if status == 'instock' %}is-active{% endif %}"
+           href="?status=instock{% if search %}&q={{ search|urlencode }}{% endif %}">In stock</a>
+        <a class="{% if status == 'low' %}is-active{% endif %}"
+           href="?status=low{% if search %}&q={{ search|urlencode }}{% endif %}">Low</a>
+        <a class="{% if status == 'out' %}is-active{% endif %}"
+           href="?status=out{% if search %}&q={{ search|urlencode }}{% endif %}">Out</a>
+    </div>
+
+    {% if search or status != 'all' %}
+    <a class="btn btn--ghost btn--sm" href="?">
+        <ion-icon name="close-outline"></ion-icon>
+        Clear{% if search %} &ldquo;{{ search|truncatechars:18 }}&rdquo;{% endif %}
+    </a>
+    {% endif %}
+
+    <div class="toolbar__spacer"></div>
+    <span class="muted">{{ products|length }} product{{ products|length|pluralize }}</span>
+</div>

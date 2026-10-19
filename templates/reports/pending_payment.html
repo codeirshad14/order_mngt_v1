@@ -1,0 +1,105 @@
+{% extends "reports/_report_base.html" %}
+
+{% comment %}
+2. Order Book with Pending Payment — only the orders still owing money, with
+   what was received against each one and what is left.
+{% endcomment %}
+
+{% block report %}
+
+<!---everything the filter changes, swapped in as one region -->
+<div id="reportResults" data-live-region>
+
+<div class="table-wrap table-wrap--tall">
+    <table class="table table--stack table--fixed">
+        <colgroup>
+            <col class="w-orderno">
+            {% if is_manager %}<col class="w-name">{% endif %}
+            <col class="w-date"><col class="w-name">
+            <col class="w-money"><col class="w-money"><col class="w-money">
+            <col class="w-status">
+        </colgroup>
+        <thead>
+            <tr>
+                <th>Order No</th>
+                {% if is_manager %}<th>Dealer</th>{% endif %}
+                <th class="hide-sm">Date</th>
+                <th class="hide-sm">Raised By</th>
+                <th class="num">Order Total</th>
+                <th class="num">Received</th>
+                <th class="num">Balance Due</th>
+                <th>State</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for row in rows %}
+            <tr>
+                <td data-label="Order No" class="cell-orderno">
+                    <a class="order-ref" href="{% url 'myorder:edit' row.order.pk %}"
+                       title="View order {{ row.order.order_no }}">
+                        <code class="dim">{{ row.order.order_no }}</code>
+                        <ion-icon name="eye-outline" aria-hidden="true"></ion-icon>
+                    </a>
+                </td>
+                {% if is_manager %}<td data-label="Dealer">{{ row.order.dealer.name }}</td>{% endif %}
+                <td data-label="Date" class="hide-sm cell-date">{{ row.order.ordered_on|date:"j M Y" }}</td>
+                <!---display only: tells a salesman's order from one the dealer placed -->
+                <td data-label="Raised By" class="hide-sm">
+                    {% if row.order.is_direct %}
+                    <span class="muted">Dealer</span>
+                    {% else %}
+                    {{ row.order.sales_executive.name }}
+                    {% endif %}
+                </td>
+                <td data-label="Order Total" class="num">{{ row.total }}</td>
+                <td data-label="Received" class="num">{{ row.paid }}</td>
+                <td data-label="Balance Due" class="num"><strong>{{ row.balance }}</strong></td>
+                <td data-label="State">
+                    <!---nothing at all received reads differently from a part payment -->
+                    {% if row.paid > 0 %}
+                    <span class="badge badge--warning">Part paid</span>
+                    {% else %}
+                    <span class="badge badge--danger">Unpaid</span>
+                    {% endif %}
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+
+        {% if rows %}
+        <tfoot>
+            <tr>
+                <td{% if is_manager %} colspan="2"{% endif %}><strong>Total</strong></td>
+                <td class="hide-sm"></td>
+                <td class="hide-sm"></td>
+                <td class="num"><strong>{{ totals.total }}</strong></td>
+                <td class="num"><strong>{{ totals.paid }}</strong></td>
+                <td class="num"><strong>{{ totals.balance }}</strong></td>
+                <td></td>
+            </tr>
+        </tfoot>
+        {% endif %}
+    </table>
+</div>
+
+{% if not rows %}
+<div class="empty">
+    <ion-icon name="checkmark-done-outline"></ion-icon>
+    <h3>Nothing outstanding</h3>
+</div>
+{% endif %}
+
+<div class="panel__foot">
+    <div class="pagination">
+        <span class="muted">
+            <strong>{{ page.paginator.count }}</strong> order{{ page.paginator.count|pluralize }} awaiting payment
+            &middot; <strong>{{ totals.balance }}</strong> to collect
+            &middot; {{ label }}
+        </span>
+        {% include "_pagination.html" %}
+    </div>
+</div>
+
+</div><!--- /#reportResults -->
+
+{% endblock %}

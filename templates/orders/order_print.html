@@ -1,0 +1,205 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>{{ order.order_no }}</title>
+    <link rel="stylesheet" href="{% static 'assets/css/style.css' %}">
+</head>
+
+<!-- standalone on purpose: the sidebar and topbar have no place on an
+     invoice, but it loads the same stylesheet so the theme is unchanged -->
+
+<body class="print-page">
+    <div class="print-sheet">
+
+        <!---letterhead: logo left, invoice meta right -->
+        <header class="inv-head">
+            <div class="inv-brand">
+                {% if company.logo %}
+                <img class="inv-brand__logo" src="{{ company.logo.url }}" alt="{{ company.name }}">
+                {% endif %}
+                <div class="inv-brand__text">
+                    <h1>{{ company.name|default:"Order Mgmt" }}</h1>
+                    <p>
+                        {% for line in company.address_lines %}{{ line }}<br>{% endfor %}
+                        {% if company.city_line %}{{ company.city_line }}<br>{% endif %}
+                        {% if company.phone %}T {{ company.phone }}{% endif %}{% if company.mobile %} &middot; M {{ company.mobile }}{% endif %}
+                        {% if company.email %}<br>{{ company.email }}{% endif %}{% if company.website %} &middot; {{ company.website }}{% endif %}
+                    </p>
+                    {% if company.gstin %}<p class="inv-brand__gstin">GSTIN {{ company.gstin }}</p>{% endif %}
+                </div>
+            </div>
+
+            <div class="inv-title">
+                <h2>Invoice</h2>
+                <table class="inv-meta">
+                    <tr><td>Invoice No</td><td>{{ order.order_no }}</td></tr>
+                    <tr><td>Date</td><td>{{ order.ordered_on|date:"d M Y" }}</td></tr>
+                    <tr><td>Status</td><td>{{ order.get_status_display }}</td></tr>
+                </table>
+            </div>
+        </header>
+
+        <!---bill to -->
+        <section class="inv-bill">
+            <h3>Bill To</h3>
+            <p class="inv-bill__name">{{ dealer.name }}</p>
+            <p>
+                {% for line in dealer.address_lines %}{{ line }}<br>{% endfor %}
+                {% if dealer.state %}{{ dealer.state }}<br>{% endif %}
+                {% if dealer.gstin %}GSTIN {{ dealer.gstin }}<br>{% endif %}
+                {{ dealer.mobile }}{% if dealer.email %} &middot; {{ dealer.email }}{% endif %}
+            </p>
+            <p class="inv-bill__supply">
+                Place of Supply: <strong>{{ dealer.state|default:"—" }}</strong>
+                &middot; {% if same_state %}Intra-state (CGST + SGST){% else %}Inter-state (IGST){% endif %}
+            </p>
+        </section>
+
+        <!---line items. table-layout is fixed and the widths add to 100%,
+             so a long product name wraps instead of pushing the table wide -->
+        <table class="inv-items">
+            <colgroup>
+                <col class="c-sr"><col class="c-desc"><col class="c-hsn"><col class="c-qty">
+                <col class="c-rate"><col class="c-net"><col class="c-gstp"><col class="c-gst">
+                <col class="c-total">
+            </colgroup>
+            <thead>
+                <tr>
+                    <th>#</th>
+                    <th>Description</th>
+                    <th>HSN</th>
+                    <th class="num">Qty</th>
+                    <th class="num">Rate</th>
+                    <th class="num">Taxable</th>
+                    <th class="num">GST%</th>
+                    <th class="num">GST</th>
+                    <th class="num">Amount</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for item in order.items.all %}
+                <tr>
+                    <td>{{ forloop.counter }}</td>
+                    <td>
+                        <span class="inv-items__name">{{ item.product.name }}</span>
+                        <span class="inv-items__sub">{{ item.product.partno }}{% if item.product.brand %} &middot; {{ item.product.brand }}{% endif %}</span>
+                    </td>
+                    <td>{{ item.product.hsn }}</td>
+                    <td class="num">{{ item.qty }} {{ item.product.unit }}</td>
+                    <td class="num">{{ item.rate }}</td>
+                    <td class="num">{{ item.line_net }}</td>
+                    <td class="num">{{ item.gst }}</td>
+                    <td class="num">{{ item.line_gst }}</td>
+                    <td class="num">{{ item.line_total }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+
+            <!---the totals row. Quantity is given per unit: an order mixing
+                 SET, BOX, KG and PCS has no single meaningful total, so each
+                 one is carried separately. The HSN and Qty columns are merged
+                 here so several units still fit on one line. -->
+            <tfoot>
+                <tr>
+                    <td colspan="2">Total</td>
+                    <td colspan="2" class="num inv-items__units">
+                        {% for code, qty in order.qty_by_unit %}{{ qty }} {{ code }}{% if not forloop.last %} &middot; {% endif %}{% endfor %}
+                    </td>
+                    <td></td>
+                    <td class="num">{{ order.total_net }}</td>
+                    <td></td>
+                    <td class="num">{{ order.total_gst }}</td>
+                    <td class="num">{{ order.total_amount }}</td>
+                </tr>
+            </tfoot>
+        </table>
+
+        <!---tax and totals share a row: stacked they pushed the payment and
+             signature blocks onto a second sheet. Tax worked out per HSN and
+             rate, because one order mixes slabs; totals on the right, the way
+             an invoice reads. Same state as us = CGST + SGST, else IGST. -->
+        <section class="inv-close-row">
+            <section class="inv-tax">
+                <h3>Tax Details</h3>
+                {% include "orders/_tax_summary.html" with table_class="inv-tax__table" %}
+            </section>
+
+            <section class="inv-sum">
+                <table class="inv-sum__table">
+                    <tr><td>Taxable Value</td><td class="num">{{ order.total_net }}</td></tr>
+
+                    {% if same_state %}
+                    <tr><td>CGST</td><td class="num">{{ cgst }}</td></tr>
+                    <tr><td>SGST</td><td class="num">{{ sgst }}</td></tr>
+                    {% else %}
+                    <tr><td>IGST</td><td class="num">{{ igst }}</td></tr>
+                    {% endif %}
+
+                    {% if round_off %}
+                    <tr><td>Round Off</td><td class="num">{{ round_off }}</td></tr>
+                    {% endif %}
+
+                    <tr class="inv-sum__grand"><td>Grand Total</td><td class="num">{{ payable }}</td></tr>
+                </table>
+            </section>
+        </section>
+
+        <!---payment: bank details and the UPI QR side by side -->
+        {% if bank %}
+        <section class="inv-pay">
+            <div class="inv-pay__bank">
+                <h3>Bank Details</h3>
+                <table class="inv-kv">
+                    <tr><td>Account Name</td><td>{{ bank.account_name }}</td></tr>
+                    <tr><td>Account No</td><td>{{ bank.account_number }}</td></tr>
+                    <tr><td>Bank</td><td>{{ bank.bank_name }}{% if bank.branch %}, {{ bank.branch }}{% endif %}</td></tr>
+                    <tr><td>IFSC</td><td>{{ bank.ifsc }}</td></tr>
+                    {% if bank.account_type %}<tr><td>Type</td><td>{{ bank.get_account_type_display }}</td></tr>{% endif %}
+                    {% if bank.upi_id %}<tr><td>UPI ID</td><td>{{ bank.upi_id }}</td></tr>{% endif %}
+                </table>
+            </div>
+
+            {% if bank.upi_qr %}
+            <figure class="inv-pay__qr">
+                <img src="{{ bank.upi_qr.url }}" alt="UPI QR code">
+                <figcaption>Scan &amp; Pay{% if bank.upi_id %}<br>{{ bank.upi_id }}{% endif %}</figcaption>
+            </figure>
+            {% endif %}
+        </section>
+        {% endif %}
+
+        <!---terms left, signature right -->
+        <section class="inv-close">
+            <div class="inv-close__terms">
+                {% if company.terms_lines %}
+                <h3>Terms &amp; Conditions</h3>
+                <ol>
+                    {% for line in company.terms_lines %}<li>{{ line }}</li>{% endfor %}
+                </ol>
+                {% endif %}
+            </div>
+
+            <div class="inv-close__sign">
+                <span class="inv-close__for">For {{ company.name|default:"Order Mgmt" }}</span>
+                <span class="inv-close__line">Authorised Signatory</span>
+            </div>
+        </section>
+
+        <p class="inv-note">This is a computer generated invoice &middot; {{ order.order_no }}</p>
+
+        <div class="print-actions no-print">
+            <button class="btn btn--primary" type="button" onclick="window.print()">
+                <ion-icon name="print-outline"></ion-icon> Print
+            </button>
+        </div>
+    </div>
+
+    <script type="module" src="https://unpkg.com/ionicons@5.5.2/dist/ionicons/ionicons.esm.js"></script>
+    <script nomodule src="https://unpkg.com/ionicons@5.5.2/dist/ionicons/ionicons.js"></script>
+</body>
+
+</html>

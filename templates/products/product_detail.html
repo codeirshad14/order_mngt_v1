@@ -1,0 +1,93 @@
+
+{% extends "mybase.html" %}
+{% load static %}
+
+{% block title %}{{ product.name }}{% endblock %}
+
+{% block page_path %}Product{% endblock %}
+
+{% block page_title %}{{ product.name }}{% endblock %}
+
+
+{% block content %}
+
+<div class="page-head__actions">
+    <span class="badge badge--{{ product.stock_badge }}">{{ product.stock_label }}</span>
+    <a class="btn btn--ghost" href="{% url 'products:products' %}">
+        <ion-icon name="list-outline"></ion-icon> All Products
+    </a>
+</div>
+
+</div>
+
+
+<section class="panel">
+    <div class="detail">
+
+        <!---front view large, the other three sides beneath it;
+             blank ones fall back to the placeholder. Hover to zoom. -->
+        <div class="detail__media">
+            {% for label, url in product.gallery %}
+            <figure class="zoom{% if forloop.first %} is-main{% endif %}">
+                <img src="{{ url }}" alt="{{ label }} view of {{ product.name }}"
+                     {% if not forloop.first %}loading="lazy"{% endif %}>
+                <figcaption class="muted">{{ label }}</figcaption>
+            </figure>
+            {% endfor %}
+        </div>
+
+        <div class="detail__info">
+            <h2 class="page-title">{{ product.name }}</h2>
+            <p class="muted">{{ product.brand }} &middot; <code class="dim">{{ product.partno }}</code></p>
+
+            <div class="detail__price">
+                <span class="detail__amount">{{ product.price_including_gst }}</span>
+                <small class="muted">incl. GST &middot; per {{ product.unit }}</small>
+            </div>
+
+            <!---adds to the signed-in dealer's draft order, same endpoint the
+                 shop cards use; it then shows the cart on the shop page -->
+            <form class="detail__buy" method="post"
+                  action="{% url 'myorder:add_to_cart' product.pk %}">
+                {% csrf_token %}
+                {% if product.stock > 0 %}
+                <input class="input" type="number" name="qty" value="1" min="1" max="{{ product.stock }}"
+                       aria-label="Quantity">
+                <button class="btn btn--primary" type="submit">
+                    <ion-icon name="cart-outline"></ion-icon> Add to Cart
+                </button>
+                {% else %}
+                <button class="btn btn--ghost" type="button" disabled>Out of stock</button>
+                {% endif %}
+            </form>
+
+            <div class="table-wrap">
+            <table class="table table--mini detail__specs">
+                <tbody>
+                    <tr><td>Part No</td><td><code class="dim">{{ product.partno }}</code></td></tr>
+                    <tr><td>Brand</td><td>{{ product.brand }}</td></tr>
+                    <tr><td>Unit</td><td>{{ product.unit }}</td></tr>
+                    <tr><td>HSN</td><td>{{ product.hsn }}</td></tr>
+                    <tr><td>GST</td><td>{{ product.get_gst_display }}</td></tr>
+                    <tr><td>Price entered</td><td>{{ product.price }} ({{ product.get_price_tax_type_display|lower }})</td></tr>
+                    <tr><td>Net of GST</td><td>{{ product.price_excluding_gst }}</td></tr>
+                    <tr><td>With GST</td><td><strong>{{ product.price_including_gst }}</strong></td></tr>
+                    <tr><td>Stock</td><td>{{ product.stock }} {{ product.unit }}</td></tr>
+                    <tr><td>Status</td><td><span class="badge badge--{{ product.stock_badge }}">{{ product.stock_label }}</span></td></tr>
+                    <tr><td>Added</td><td>{{ product.created_at|date:"j M Y, g:i a" }}</td></tr>
+                    <tr><td>Updated</td><td>{{ product.updated_at|date:"j M Y, g:i a" }}</td></tr>
+                </tbody>
+            </table>
+            </div>
+
+            {% if product.desc %}
+            <div>
+                <strong>Description</strong>
+                <p class="muted">{{ product.desc|linebreaksbr }}</p>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</section>
+
+{% endblock %}

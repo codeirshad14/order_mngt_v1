@@ -1,0 +1,111 @@
+{% extends "reports/_report_base.html" %}
+
+{% comment %}
+9. Order with GST Details — every placed order with its tax worked out: the
+taxable value, the CGST/SGST split or the IGST, and the total.
+
+The same shell, toolbar, filters, search, live swap and pagination as every
+other report; only the columns differ. CGST/SGST and IGST are mutually
+exclusive on one order, so the column that does not apply shows a dash rather
+than a zero — a zero reads as "no tax was charged", which would be wrong.
+{% endcomment %}
+
+{% block report %}
+
+<!---everything the filter changes, swapped in as one region -->
+<div id="reportResults" data-live-region>
+
+<div class="table-wrap table-wrap--tall">
+    <table class="table table--stack table--fixed">
+        <colgroup>
+            <col class="w-orderno">
+            {% if is_manager %}<col class="w-dealer">{% endif %}
+            <col class="w-date"><col class="w-name">
+            <col class="w-money"><col class="w-money">
+            <col class="w-money"><col class="w-money"><col class="w-money">
+        </colgroup>
+        <thead>
+            <tr>
+                <th>Order No</th>
+                {% if is_manager %}<th>Dealer</th>{% endif %}
+                <th class="hide-sm">Date</th>
+                <th class="hide-sm">Tax Type</th>
+                <th class="num">Taxable</th>
+                <th class="num hide-sm">CGST</th>
+                <th class="num hide-sm">SGST</th>
+                <th class="num">IGST</th>
+                <th class="num">Total</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for r in rows %}
+            <tr>
+                <td data-label="Order No" class="cell-orderno">
+                    <a class="order-ref" href="{% url 'myorder:edit' r.order.pk %}"
+                       title="View order {{ r.order.order_no }}">
+                        <code class="dim">{{ r.order.order_no }}</code>
+                        <ion-icon name="eye-outline" aria-hidden="true"></ion-icon>
+                    </a>
+                </td>
+                {% if is_manager %}<td data-label="Dealer">{{ r.order.dealer.name }}</td>{% endif %}
+                <td data-label="Date" class="hide-sm cell-date">{{ r.order.ordered_on|date:"j M Y" }}</td>
+                <td data-label="Tax Type" class="hide-sm">
+                    <span class="badge badge--{% if r.same_state %}info{% else %}warning{% endif %}">
+                        {% if r.same_state %}CGST + SGST{% else %}IGST{% endif %}
+                    </span>
+                </td>
+                <td data-label="Taxable" class="num">{{ r.net }}</td>
+                <!---a dash, not a zero: the other kind of tax was charged -->
+                <td data-label="CGST" class="num hide-sm">
+                    {% if r.same_state %}{{ r.cgst }}{% else %}<span class="muted">&mdash;</span>{% endif %}
+                </td>
+                <td data-label="SGST" class="num hide-sm">
+                    {% if r.same_state %}{{ r.sgst }}{% else %}<span class="muted">&mdash;</span>{% endif %}
+                </td>
+                <td data-label="IGST" class="num">
+                    {% if r.same_state %}<span class="muted">&mdash;</span>{% else %}{{ r.igst }}{% endif %}
+                </td>
+                <td data-label="Total" class="num"><strong>{{ r.total }}</strong></td>
+            </tr>
+            {% endfor %}
+        </tbody>
+
+        {% if rows %}
+        <tfoot>
+            <tr>
+                <td{% if is_manager %} colspan="2"{% endif %}><strong>Total</strong></td>
+                <td class="hide-sm"></td>
+                <td class="hide-sm"></td>
+                <td class="num"><strong>{{ totals.net }}</strong></td>
+                <td class="num hide-sm"><strong>{{ totals.cgst }}</strong></td>
+                <td class="num hide-sm"><strong>{{ totals.sgst }}</strong></td>
+                <td class="num"><strong>{{ totals.igst }}</strong></td>
+                <td class="num"><strong>{{ totals.total }}</strong></td>
+            </tr>
+        </tfoot>
+        {% endif %}
+    </table>
+</div>
+
+{% if not rows %}
+<div class="empty">
+    <ion-icon name="receipt-outline"></ion-icon>
+    <h3>No orders in this period</h3>
+</div>
+{% endif %}
+
+<div class="panel__foot">
+    <div class="pagination">
+        <span class="muted">
+            <strong>{{ page.paginator.count }}</strong> order{{ page.paginator.count|pluralize }}
+            &middot; {{ totals.intra }} intra-state, {{ totals.inter }} inter-state
+            &middot; GST <strong>{{ totals.gst }}</strong>
+            &middot; {{ label }}
+        </span>
+        {% include "_pagination.html" %}
+    </div>
+</div>
+
+</div><!--- /#reportResults -->
+
+{% endblock %}

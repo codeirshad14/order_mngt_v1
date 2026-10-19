@@ -1,0 +1,51 @@
+{% comment %}
+The page buttons that sit under a table. Shared by the order table, the
+payment page and every report, so paging looks and behaves the same
+everywhere.
+
+Expects
+    page          a Django Page object
+    page_range    paginator.get_elided_page_range(...) for that page
+    querystring   the filter as it stands, with the page number removed
+
+Optional
+    param         the query parameter to page with, when a page carries more
+                  than one table. Defaults to "page"; the payment page's
+                  history table uses "hpage".
+
+Every link is a bare ?query. That is exactly what the live-filter script
+listens for, so paging swaps the rows in without reloading the page — and
+with no JS at all each one is still an ordinary link that works.
+
+Nothing is drawn while everything fits on a single page.
+{% endcomment %}
+
+{% if page.paginator.num_pages > 1 %}
+<div class="pagination__pages">
+
+    {% if page.has_previous %}
+    <a href="?{{ param|default:'page' }}={{ page.previous_page_number }}{% if querystring %}&{{ querystring }}{% endif %}"
+       aria-label="Previous page"><ion-icon name="chevron-back-outline"></ion-icon></a>
+    {% else %}
+    <button disabled aria-label="Previous page"><ion-icon name="chevron-back-outline"></ion-icon></button>
+    {% endif %}
+
+    {% for num in page_range %}
+        {% if num == page.paginator.ELLIPSIS %}
+        <button disabled>{{ num }}</button>
+        {% elif num == page.number %}
+        <button class="is-active" aria-current="page">{{ num }}</button>
+        {% else %}
+        <a href="?{{ param|default:'page' }}={{ num }}{% if querystring %}&{{ querystring }}{% endif %}">{{ num }}</a>
+        {% endif %}
+    {% endfor %}
+
+    {% if page.has_next %}
+    <a href="?{{ param|default:'page' }}={{ page.next_page_number }}{% if querystring %}&{{ querystring }}{% endif %}"
+       aria-label="Next page"><ion-icon name="chevron-forward-outline"></ion-icon></a>
+    {% else %}
+    <button disabled aria-label="Next page"><ion-icon name="chevron-forward-outline"></ion-icon></button>
+    {% endif %}
+
+</div>
+{% endif %}

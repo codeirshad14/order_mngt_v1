@@ -1,0 +1,76 @@
+{% extends "mybase.html" %}
+{% load static %}
+
+{% block title %}Contact Us{% endblock %}
+
+{% block page_path %}Contact Us{% endblock %}
+
+{% block page_title %}Contact Us{% endblock %}
+
+
+{% block content %}
+
+</div>
+
+{% for c in contacts %}
+<section class="panel">
+    <div class="toolbar">
+        <h2 class="page-title">{{ c.name }}</h2>
+        {% if c.is_primary %}<span class="badge badge--success">Head office</span>{% endif %}
+        <div class="toolbar__spacer"></div>
+        {% if c.working_hours %}<span class="muted">{{ c.working_hours }}</span>{% endif %}
+    </div>
+
+    <div class="contact">
+        <div class="contact__info">
+            <div class="table-wrap">
+            <table class="table table--mini">
+                <tbody>
+                    <tr>
+                        <td>Address</td>
+                        <td>
+                            {% for line in c.address_lines %}{{ line }}<br>{% endfor %}
+                            {% if c.city_line %}{{ c.city_line }}{% endif %}
+                        </td>
+                    </tr>
+                    {% if c.phone %}<tr><td>Phone</td><td><a href="tel:{{ c.phone }}">{{ c.phone }}</a></td></tr>{% endif %}
+                    {% if c.mobile %}<tr><td>Mobile</td><td><a href="tel:{{ c.mobile }}">{{ c.mobile }}</a></td></tr>{% endif %}
+                    {% if c.whatsapp %}<tr><td>WhatsApp</td><td>{{ c.whatsapp }}</td></tr>{% endif %}
+                    {% if c.email %}<tr><td>Email</td><td><a href="mailto:{{ c.email }}">{{ c.email }}</a></td></tr>{% endif %}
+                    {% if c.website %}<tr><td>Website</td><td><a href="{{ c.website }}" target="_blank" rel="noopener">{{ c.website }}</a></td></tr>{% endif %}
+                </tbody>
+            </table>
+            </div>
+
+            {% if c.socials %}
+            <div class="contact__social">
+                {% for label, icon, url in c.socials %}
+                <a class="btn btn--ghost btn--sm" href="{{ url }}" target="_blank" rel="noopener" aria-label="{{ label }}">
+                    <ion-icon name="{{ icon }}"></ion-icon> {{ label }}
+                </a>
+                {% endfor %}
+            </div>
+            {% endif %}
+        </div>
+
+        <!---only the embed URL is stored, so nothing here can inject markup -->
+        {% if c.map_embed_url %}
+        <div class="contact__map">
+            <iframe src="{{ c.map_embed_url }}" title="Map to {{ c.name }}"
+                    loading="lazy" referrerpolicy="no-referrer-when-downgrade"
+                    allowfullscreen></iframe>
+        </div>
+        {% endif %}
+    </div>
+</section>
+{% empty %}
+<section class="panel">
+    <div class="empty">
+        <ion-icon name="call-outline"></ion-icon>
+        <h3>No contact details yet</h3>
+        <p>Add an office in the admin to show it here.</p>
+    </div>
+</section>
+{% endfor %}
+
+{% endblock %}

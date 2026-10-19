@@ -1,0 +1,61 @@
+{% extends "mybase.html" %}
+{% load static %}
+
+{% block title %}Reports{% endblock %}
+
+{% block page_path %}Reports{% endblock %}
+
+{% block page_title %}Reports{% endblock %}
+
+
+
+{% block content %}
+
+<div class="page-head__actions">
+    <a class="btn btn--ghost" href="{% url 'myorder:myorder' %}">
+        <ion-icon name="receipt-outline"></ion-icon> All Orders
+    </a>
+</div>
+
+</div>
+
+
+<!---one card per report; the title on the card is the report's own name -->
+
+<section class="panel">
+    <div class="toolbar">
+        <div class="search">
+            <ion-icon name="search-outline"></ion-icon>
+            <input type="search" placeholder="Find a report…" aria-label="Find a report"
+                data-search-target="#reportCards">
+        </div>
+        <div class="toolbar__spacer"></div>
+        <span class="muted"><span data-visible-count>{{ cards|length }}</span> of {{ cards|length }} report{{ cards|length|pluralize }}</span>
+    </div>
+
+    <div class="report-grid" id="reportCards">
+        {% for card in cards %}
+        <a class="report-card" href="{% url card.url %}" style="--card-tint: {{ card.tint }}">
+            <span class="report-card__icon">
+                <ion-icon name="{{ card.icon }}"></ion-icon>
+            </span>
+
+            <span class="report-card__body">
+                <strong class="report-card__name">{{ card.name }}</strong>
+            </span>
+
+            <span class="report-card__go">
+                <ion-icon name="arrow-forward-outline"></ion-icon>
+            </span>
+        </a>
+        {% endfor %}
+    </div>
+
+    <!---shown when the filter above hides every card -->
+    <div class="empty" data-empty hidden>
+        <ion-icon name="search-outline"></ion-icon>
+        <h3>No reports match</h3>
+    </div>
+</section>
+
+{% endblock %}

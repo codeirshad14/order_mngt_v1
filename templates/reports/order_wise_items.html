@@ -1,0 +1,100 @@
+{% extends "reports/_report_base.html" %}
+
+{% comment %}
+6. Top Order Wise Item Wise — each order opened up, its lines ranked by value.
+   Orders run biggest first; the order number shows on its first line only, so
+   the table reads as groups rather than as a flat list.
+{% endcomment %}
+
+{% block report %}
+
+<!---everything the filter changes, swapped in as one region -->
+<div id="reportResults" data-live-region>
+
+<div class="table-wrap table-wrap--tall">
+    <table class="table table--stack table--fixed">
+        <colgroup>
+            <col class="w-orderno">
+            {% if is_manager %}<col class="w-name">{% endif %}
+            <col class="w-rank"><col class="w-name"><col class="w-code">
+            <col class="w-qty"><col class="w-money">
+        </colgroup>
+        <thead>
+            <tr>
+                <th>Order No</th>
+                {% if is_manager %}<th>Dealer</th>{% endif %}
+                <th class="num">#</th>
+                <th>Item</th>
+                <th class="hide-sm">Part No</th>
+                <th class="num">Qty</th>
+                <th class="num">Line Total</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for group in groups %}
+            {% for row in group.lines %}
+            <tr class="{% if forloop.first %}is-group-start{% endif %}">
+                <!---only the first line of an order carries its number -->
+                <td data-label="Order No" class="cell-orderno">
+                    {% if forloop.first %}
+                    <a class="order-ref" href="{% url 'myorder:edit' group.order.pk %}"
+                       title="View order {{ group.order.order_no }}">
+                        <code class="dim">{{ group.order.order_no }}</code>
+                        <ion-icon name="eye-outline" aria-hidden="true"></ion-icon>
+                    </a>
+                    <small class="muted">{{ group.order.ordered_on|date:"j M Y" }}</small>
+                    <!---display only: who raised this order -->
+                    <small class="muted">{{ group.order.raised_by }}</small>
+                    {% endif %}
+                </td>
+                {% if is_manager %}
+                <td data-label="Dealer">{% if forloop.first %}{{ group.order.dealer.name }}{% endif %}</td>
+                {% endif %}
+                <td data-label="#" class="num muted">{{ row.rank }}</td>
+                <td data-label="Item"><strong>{{ row.line.product.name }}</strong></td>
+                <td data-label="Part No" class="hide-sm"><code class="dim">{{ row.line.product.partno }}</code></td>
+                <td data-label="Qty" class="num">{{ row.line.qty }} {{ row.line.product.unit }}</td>
+                <td data-label="Line Total" class="num"><strong>{{ row.total }}</strong></td>
+            </tr>
+            {% endfor %}
+            {% endfor %}
+        </tbody>
+
+        {% if groups %}
+        <tfoot>
+            <tr>
+                <td{% if is_manager %} colspan="2"{% endif %}><strong>Total</strong></td>
+                <td class="num"><strong>{{ totals.lines }}</strong></td>
+                <td>line{{ totals.lines|pluralize }} across {{ totals.orders }} order{{ totals.orders|pluralize }}</td>
+                <td class="hide-sm"></td>
+                <td class="num"><strong>{{ totals.qty }}</strong></td>
+                <td class="num"><strong>{{ totals.value }}</strong></td>
+            </tr>
+        </tfoot>
+        {% endif %}
+    </table>
+</div>
+
+{% if not groups %}
+<div class="empty">
+    <ion-icon name="list-outline"></ion-icon>
+    <h3>No order lines</h3>
+</div>
+{% endif %}
+
+<div class="panel__foot">
+    <div class="pagination">
+        <span class="muted">
+            <strong>{{ totals.orders }}</strong> order{{ totals.orders|pluralize }},
+            <strong>{{ totals.lines }}</strong> line{{ totals.lines|pluralize }}
+            <!---taxable left the table; the total stays here -->
+            &middot; net <strong>{{ totals.net }}</strong>
+            &middot; largest order first &middot; {{ label }}
+        </span>
+        {% include "_pagination.html" %}
+    </div>
+</div>
+
+</div><!--- /#reportResults -->
+
+{% endblock %}

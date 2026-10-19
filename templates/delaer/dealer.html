@@ -1,0 +1,99 @@
+{% extends "mybase.html" %}
+{% load static %}
+
+{% block title %}Dealer Profile{% endblock %}
+
+{% block page_path %}Dealer Profile{% endblock %}
+
+{% block page_title %}Dealer Profile{% endblock %}
+
+
+{% block content %}
+
+<div class="page-head__actions">
+    <span class="badge badge--{% if profile %}success{% else %}warning{% endif %}">
+        {% if profile %}Profile complete{% else %}Not set up yet{% endif %}
+    </span>
+</div>
+
+</div>
+
+{% if messages %}
+{% endif %}
+
+
+<!---Signed-in user this profile belongs to -->
+
+<section class="panel">
+    <div class="toolbar">
+        <div class="cell-user">
+            <span class="avatar">{% if profile %}{{ profile.initials }}{% else %}{{ user.username|slice:":2"|upper }}{% endif %}</span>
+            <div>
+                <strong>{{ user.get_full_name|default:user.username }}</strong>
+                <small>{{ user.email|default:"no email on the account" }}</small>
+            </div>
+        </div>
+        <div class="toolbar__spacer"></div>
+        {% if profile %}
+        <span class="muted">Updated {{ profile.updated_at|date:"j M Y, g:i a" }}</span>
+        {% endif %}
+    </div>
+
+    {% if profile %}
+    <div class="table-wrap">
+        <table class="table table--stack">
+            <tbody>
+                <tr>
+                    <td data-label="Company"><strong>{{ profile.name }}</strong></td>
+                    <td data-label="GSTIN"><code class="dim">{{ profile.gstin }}</code></td>
+                    <td data-label="Mobile">{{ profile.mobile }}</td>
+                    <td data-label="Email">{{ profile.email }}</td>
+                    <td data-label="Address">
+                        {% for line in profile.address_lines %}{{ line }}<br>{% endfor %}
+                    </td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+    {% endif %}
+</section>
+
+
+<!---Create / edit the company profile -->
+
+<section class="panel">
+    <div class="toolbar">
+        <h2 class="page-title">{% if profile %}Edit company details{% else %}Add your company details{% endif %}</h2>
+    </div>
+
+    <form method="post" novalidate action="{% url 'delaer:mydealer' %}">
+        {% csrf_token %}
+
+        <div class="modal__body">
+            {% if form.non_field_errors %}
+            <div class="form-alert">{{ form.non_field_errors }}</div>
+            {% endif %}
+
+            <div class="form-grid">
+                {% for field in form %}
+                <div class="field{% if field.name == 'address' %} field--wide{% endif %}">
+                    <label for="{{ field.id_for_label }}">
+                        {{ field.label }}{% if field.field.required %} <span class="req">*</span>{% endif %}
+                    </label>
+                    {{ field }}
+                    {% if field.help_text %}<small class="hint">{{ field.help_text }}</small>{% endif %}
+                    {% if field.errors %}<small class="field-error">{{ field.errors|striptags }}</small>{% endif %}
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+
+        <div class="panel__foot">
+            <button class="btn btn--primary" type="submit">
+                <ion-icon name="save-outline"></ion-icon> Save Profile
+            </button>
+        </div>
+    </form>
+</section>
+
+{% endblock %}

@@ -1,0 +1,62 @@
+{% extends "mybase.html" %}
+{% load static %}
+
+{% block title %}Bank Details{% endblock %}
+
+{% block page_path %}Bank Details{% endblock %}
+
+{% block page_title %}Bank Details{% endblock %}
+
+
+{% block content %}
+
+</div>
+
+{% for a in accounts %}
+<section class="panel">
+    <div class="toolbar">
+        <h2 class="page-title">{{ a.bank_name }}</h2>
+        {% if a.is_primary %}<span class="badge badge--success">Primary</span>{% endif %}
+        <span class="badge badge--info">{{ a.get_account_type_display }}</span>
+        <div class="toolbar__spacer"></div>
+        <span class="muted">{{ a.label }}</span>
+    </div>
+
+    <div class="bank">
+        <div class="bank__info">
+            <div class="table-wrap">
+            <table class="table table--mini">
+                <tbody>
+                    <tr><td>Account holder</td><td><strong>{{ a.account_name }}</strong></td></tr>
+                    <tr><td>Account number</td><td><code class="dim">{{ a.account_number }}</code></td></tr>
+                    <tr><td>Account type</td><td>{{ a.get_account_type_display }}</td></tr>
+                    <tr><td>Bank</td><td>{{ a.bank_name }}</td></tr>
+                    {% if a.branch %}<tr><td>Branch</td><td>{{ a.branch }}</td></tr>{% endif %}
+                    <tr><td>IFSC</td><td><code class="dim">{{ a.ifsc }}</code></td></tr>
+                    {% if a.micr %}<tr><td>MICR</td><td><code class="dim">{{ a.micr }}</code></td></tr>{% endif %}
+                    {% if a.swift %}<tr><td>SWIFT / BIC</td><td><code class="dim">{{ a.swift }}</code></td></tr>{% endif %}
+                    {% if a.upi_id %}<tr><td>UPI ID</td><td><code class="dim">{{ a.upi_id }}</code></td></tr>{% endif %}
+                </tbody>
+            </table>
+            </div>
+        </div>
+
+        {% if a.upi_qr %}
+        <div class="bank__qr">
+            <img src="{{ a.upi_qr.url }}" alt="UPI QR code for {{ a.bank_name }}" loading="lazy">
+            <small class="muted">Scan to pay{% if a.upi_id %} &middot; {{ a.upi_id }}{% endif %}</small>
+        </div>
+        {% endif %}
+    </div>
+</section>
+{% empty %}
+<section class="panel">
+    <div class="empty">
+        <ion-icon name="card-outline"></ion-icon>
+        <h3>No bank details yet</h3>
+        <p>Add an account in the admin to show it here.</p>
+    </div>
+</section>
+{% endfor %}
+
+{% endblock %}

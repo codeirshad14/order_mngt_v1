@@ -1,0 +1,48 @@
+{% extends "mybase.html" %}
+{% load static %}
+
+{% block title %}{{ catelog.name }}{% endblock %}
+
+{% block page_path %}Catelog{% endblock %}
+
+{% block page_title %}{{ catelog.name }}{% endblock %}
+
+
+{% block content %}
+
+<div class="page-head__actions">
+    {% if catelog.new_arrival_count %}
+    <span class="badge badge--info">{{ catelog.new_arrival_count }} new</span>
+    {% endif %}
+    <a class="btn btn--ghost" href="{% url 'catelog:catelog' %}">
+        <ion-icon name="albums-outline"></ion-icon> All Catelogs
+    </a>
+</div>
+
+</div>
+
+
+<!---every product in this catelog; each card links to the product details page -->
+
+<section class="panel">
+    <div class="toolbar">
+        <div class="search">
+            <ion-icon name="search-outline"></ion-icon>
+            <input type="search" placeholder="Filter products…" aria-label="Filter products"
+                data-search-target="#catelogProducts">
+        </div>
+        <div class="toolbar__spacer"></div>
+        <span class="muted"><span data-visible-count>{{ products|length }}</span> of {{ products|length }} product{{ products|length|pluralize }}</span>
+    </div>
+
+    {% include "catelog/_product_cards.html" with grid_id="catelogProducts" empty_title="This catelog is empty" empty_text="Add products to it in the admin." %}
+
+    <!---shown when the filter above hides every card -->
+    <div class="empty" data-empty hidden>
+        <ion-icon name="search-outline"></ion-icon>
+        <h3>No products match</h3>
+        <p>Nothing in this catelog matches what you typed. Clear the box to see them all.</p>
+    </div>
+</section>
+
+{% endblock %}

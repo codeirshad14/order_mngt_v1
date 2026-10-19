@@ -1,0 +1,164 @@
+{% extends "mybase.html" %}
+{% load static %}
+
+{% block title %}Attendance{% endblock %}
+
+{% block page_path %}Attendance{% endblock %}
+
+{% block page_title %}Mark a Visit{% endblock %}
+
+
+{% block content %}
+
+<div class="page-head__actions">
+    <a class="btn btn--ghost" href="{% url 'reports:visit_report' %}">
+        <ion-icon name="map-outline"></ion-icon> Visit Report
+    </a>
+</div>
+
+</div>
+
+
+
+{% if can_mark %}
+<!---Marking a visit: pick the dealer, take the photo, and the browser adds
+     the coordinates. data-visit-form is what the script hooks onto. -->
+
+<section class="panel">
+    <div class="toolbar">
+        <h2 class="page-title">
+            <ion-icon name="camera-outline"></ion-icon> New Visit
+        </h2>
+        <div class="toolbar__spacer"></div>
+        <span class="muted">
+            <strong>{{ sales.name }}</strong> &middot; {{ sales.code }}
+        </span>
+    </div>
+
+    <form method="post" enctype="multipart/form-data" novalidate
+          class="visit-form" data-visit-form
+          action="{% url 'attendance:attendance' %}">
+        {% csrf_token %}
+
+        {% if form.non_field_errors %}
+        <div class="form-alert">{{ form.non_field_errors }}</div>
+        {% endif %}
+
+        <div class="field">
+            <label for="{{ form.dealer.id_for_label }}">
+                Dealer visited <span class="req">*</span>
+            </label>
+            {{ form.dealer }}
+            {% if form.dealer.errors %}
+            <small class="field-error">{{ form.dealer.errors|striptags }}</small>
+            {% endif %}
+        </div>
+
+        <div class="field">
+            <label for="{{ form.photo.id_for_label }}">
+                Photo at the dealer <span class="req">*</span>
+            </label>
+            <!---on a phone this opens the camera straight away; on a laptop
+                 it falls back to choosing a file -->
+            {{ form.photo }}
+            <small class="hint">Tap to open the camera.</small>
+            {% if form.photo.errors %}
+            <small class="field-error">{{ form.photo.errors|striptags }}</small>
+            {% endif %}
+
+            <!---the shot, shown back before it is sent -->
+            <figure class="visit-shot" data-visit-preview hidden>
+                <img alt="The photo about to be uploaded">
+            </figure>
+        </div>
+
+        <div class="field">
+            <label for="{{ form.note.id_for_label }}">Note</label>
+            {{ form.note }}
+        </div>
+
+        <!---filled in by the browser, never typed -->
+        {{ form.latitude }}{{ form.longitude }}{{ form.accuracy_m }}{{ form.place }}
+
+        <div class="field visit-where" data-visit-location>
+            <span class="visit-where__state" data-visit-state>
+                <ion-icon name="location-outline"></ion-icon>
+                Looking for your location…
+            </span>
+            <button class="btn btn--ghost btn--sm" type="button" data-visit-retry hidden>
+                <ion-icon name="refresh-outline"></ion-icon> Try again
+            </button>
+        </div>
+
+        <div class="order-actions">
+            <button class="btn btn--primary" type="submit">
+                <ion-icon name="checkmark-done-outline"></ion-icon> Save Visit
+            </button>
+            <span class="hint">
+                The location is taken when the page loads. A visit still saves
+                without it if you refuse permission.
+            </span>
+        </div>
+    </form>
+</section>
+{% else %}
+<div class="form-alert">
+    You are viewing visits as management. Only a sales executive marks one.
+</div>
+{% endif %}
+
+
+<!---the last few already marked -->
+
+<section class="panel">
+    <div class="toolbar">
+        <h2 class="page-title">
+            {% if can_mark %}Your recent visits{% else %}Recent visits{% endif %}
+        </h2>
+        <div class="toolbar__spacer"></div>
+        <span class="muted">
+            <strong>{{ visits|length }}</strong> of {{ visit_count }} visit{{ visit_count|pluralize }}
+        </span>
+    </div>
+
+    <div class="visit-grid">
+        {% for visit in visits %}
+        <article class="visit-card">
+            <a class="visit-card__shot" href="{{ visit.photo.url }}" target="_blank"
+               rel="noopener" title="Open the full photo">
+                <img src="{{ visit.photo.url }}" alt="Visit to {{ visit.dealer.name }}"
+                     loading="lazy">
+            </a>
+
+            <div class="visit-card__body">
+                <strong>{{ visit.dealer.name }}</strong>
+                <small class="muted">
+                    {{ visit.visited_on|date:"j M Y" }} &middot; {{ visit.created_at|date:"H:i" }}
+                    {% if is_manager %}&middot; {{ visit.sales_executive.name }}{% endif %}
+                </small>
+                {% if visit.note %}<small class="muted">{{ visit.note }}</small>{% endif %}
+
+                {% if visit.has_location %}
+                <a class="visit-card__map" href="{{ visit.map_url }}" target="_blank" rel="noopener">
+                    <ion-icon name="location-outline"></ion-icon>
+                    <!---the place name where one was found, coordinates otherwise -->
+                    {{ visit.where }}
+                    {% if visit.accuracy_m %}<span class="muted">±{{ visit.accuracy_m }} m</span>{% endif %}
+                </a>
+                {% else %}
+                <span class="muted">
+                    <ion-icon name="location-outline"></ion-icon> No location recorded
+                </span>
+                {% endif %}
+            </div>
+        </article>
+        {% empty %}
+        <div class="empty">
+            <ion-icon name="camera-outline"></ion-icon>
+            <h3>No visits yet</h3>
+        </div>
+        {% endfor %}
+    </div>
+</section>
+
+{% endblock %}

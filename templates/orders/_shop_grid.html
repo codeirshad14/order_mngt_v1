@@ -1,0 +1,56 @@
+{% comment %}
+The shop's product cards. Rendered inside the page on a normal visit, and on
+its own when the search box asks for a filtered set.
+{% endcomment %}
+
+<div class="product-grid" id="shopGrid" data-live-region>
+    {% for p in products %}
+    <article class="product-card" data-status="{{ p.stock_status }}">
+        <a class="product-card__media" href="{% url 'products:detail' p.pk %}">
+            <img src="{{ p.front_url }}" alt="{{ p.name }}" loading="lazy">
+        </a>
+
+        <div class="product-card__main">
+            <div class="product-card__body">
+                <a class="product-card__name" href="{% url 'products:detail' p.pk %}">{{ p.name }}</a>
+                <small class="muted">{{ p.brand }} &middot; <code class="dim">{{ p.partno }}</code></small>
+                <div class="product-card__price">
+                    <span class="product-card__amount">{{ p.price_excluding_gst }}</span>
+                    <small class="muted">+ {{ p.get_gst_display }} GST &middot; per {{ p.unit }}</small>
+                </div>
+                <span class="badge badge--{{ p.stock_badge }}">{{ p.stock_label }}</span>
+            </div>
+
+            <!-- posts normally without JS; the script upgrades it to fetch -->
+            <form class="product-card__foot" method="post" data-add-form
+                  action="{% url 'myorder:add_to_cart' p.pk %}">
+                {% csrf_token %}
+                {% if p.stock > 0 %}
+                <input class="input" type="number" name="qty" value="1" min="1" max="{{ p.stock }}"
+                       aria-label="Quantity for {{ p.name }}">
+                <button class="btn btn--primary" type="submit">
+                    <ion-icon name="cart-outline"></ion-icon> Add
+                </button>
+                {% else %}
+                <button class="btn btn--ghost" type="button" disabled>Out of stock</button>
+                {% endif %}
+            </form>
+        </div>
+    </article>
+    {% empty %}
+    <div class="empty">
+        <ion-icon name="cube-outline"></ion-icon>
+        {% if search or status != 'all' %}
+        <h3>No products match</h3>
+        <p>
+            {% if search %}Nothing found for &ldquo;{{ search|truncatechars:30 }}&rdquo;. Check the
+            spelling, try a part number, or search for fewer words.{% else %}Try another stock
+            state, or clear the filter.{% endif %}
+        </p>
+        {% else %}
+        <h3>No products yet</h3>
+        <p>Add products in the Products section first.</p>
+        {% endif %}
+    </div>
+    {% endfor %}
+</div>

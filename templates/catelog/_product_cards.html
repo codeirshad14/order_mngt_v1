@@ -1,0 +1,49 @@
+{% comment %}
+Product cards shared by the catelog detail page and the new arrivals page.
+Expects: products, grid_id, empty_title, empty_text.
+{% endcomment %}
+
+<div class="product-grid" id="{{ grid_id }}">
+    {% for p in products %}
+    <article class="product-card" data-status="{{ p.stock_status }}">
+        <a class="product-card__media" href="{% url 'products:detail' p.pk %}">
+            <img src="{{ p.front_url }}" alt="{{ p.name }}" loading="lazy">
+        </a>
+
+        <div class="product-card__main">
+            <div class="product-card__body">
+                <a class="product-card__name" href="{% url 'products:detail' p.pk %}">{{ p.name }}</a>
+                <small class="muted">{{ p.brand }} &middot; <code class="dim">{{ p.partno }}</code></small>
+                <div class="product-card__price">
+                    <span class="product-card__amount">{{ p.price_including_gst }}</span>
+                    <small class="muted">incl. GST &middot; per {{ p.unit }}</small>
+                </div>
+                <span class="card-tags">
+                    <span class="badge badge--{{ p.stock_badge }}">{{ p.stock_label }}</span>
+                    {% if p.new_arrivals.all %}<span class="badge badge--info">New</span>{% endif %}
+                </span>
+            </div>
+
+            <form class="product-card__foot" method="post"
+                  action="{% url 'myorder:add_to_cart' p.pk %}">
+                {% csrf_token %}
+                {% if p.stock > 0 %}
+                <input class="input" type="number" name="qty" value="1" min="1" max="{{ p.stock }}"
+                       aria-label="Quantity for {{ p.name }}">
+                <button class="btn btn--primary" type="submit">
+                    <ion-icon name="cart-outline"></ion-icon> Add
+                </button>
+                {% else %}
+                <button class="btn btn--ghost" type="button" disabled>Out of stock</button>
+                {% endif %}
+            </form>
+        </div>
+    </article>
+    {% empty %}
+    <div class="empty">
+        <ion-icon name="cube-outline"></ion-icon>
+        <h3>{{ empty_title }}</h3>
+        <p>{{ empty_text }}</p>
+    </div>
+    {% endfor %}
+</div>

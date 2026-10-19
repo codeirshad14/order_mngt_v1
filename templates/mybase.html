@@ -1,0 +1,466 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+
+    <title>{% block title %}My Base{% endblock %}</title>
+
+    <link rel="stylesheet" href="{% static 'assets/css/style.css' %}">
+    <!-- set the theme before first paint so dark mode never flashes white -->
+    <script>
+        try {
+            var t = localStorage.getItem("om-theme");
+            document.documentElement.setAttribute("data-theme",
+                t || (matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light"));
+        } catch (e) { }
+    </script>
+</head>
+
+<body>
+    <div class="app" id="app">
+        <aside class="sidebar">
+            <div class="sidebar__brand">
+                <span class="sidebar__logo"><ion-icon name="cube"></ion-icon></span>
+                <span class="sidebar__name">Order Mgmt</span>
+            </div>
+            <nav class="sidebar__nav" id="sidebarNav" aria-label="Main navigation">
+                {% with view=request.resolver_match.view_name %}
+                <div class="nav__section">Menus</div>
+
+                <a href="{% url 'dashboard:dashboard' %}" class="nav__link{% if view == 'dashboard:dashboard' or view == 'mybase' %} is-active{% endif %}" data-tip="Dashboard">
+                    <ion-icon name="grid-outline"></ion-icon>
+                    <span class="nav__label">Dashboard</span>
+                </a>
+                <a href="{% url 'products:products' %}" class="nav__link{% if view == 'products:products' %} is-active{% endif %}" data-tip="Products">
+                    <ion-icon name="cube-outline"></ion-icon>
+                    <span class="nav__label">Products</span>
+                </a>
+                <a href="{% url 'myorder:myorder' %}" class="nav__link{% if 'myorder' in view %} is-active{% endif %}" data-tip="Orders">
+                    <ion-icon name="receipt-outline"></ion-icon>
+                    <span class="nav__label">Orders</span>
+                </a>
+
+                <a href="{% url 'catelog:catelog' %}" class="nav__link{% if view == 'catelog:catelog' or view == 'catelog:detail' %} is-active{% endif %}" data-tip="Catelogs">
+                    <ion-icon name="journal-outline"></ion-icon>
+                    <span class="nav__label">Catelogs</span>
+                </a>
+                <a href="{% url 'catelog:new_arrival' %}" class="nav__link{% if view == 'catelog:new_arrival' %} is-active{% endif %}" data-tip="New Arrivals">
+                    <ion-icon name="sparkles-outline"></ion-icon>
+                    <span class="nav__label">New Arrivals</span>
+                </a>
+
+                <a href="{% url 'reports:reports' %}" class="nav__link{% if 'reports' in view %} is-active{% endif %}" data-tip="Reports">
+                    <ion-icon name="bar-chart-outline"></ion-icon>
+                    <span class="nav__label">Reports</span>
+                </a>
+
+                <!-- apps not built yet — give each a real url tag as it lands -->
+                <a href="{% url 'payment:payment' %}" class="nav__link{% if view == 'payment:payment' %} is-active{% endif %}" data-tip="Payments">
+                    <ion-icon name="wallet-outline"></ion-icon>
+                    <span class="nav__label">Payments</span>
+                </a>
+                <!---field work, so only the people who do it or read it:
+                     a dealer has no visits to mark and none to look at -->
+                {% if user_is_sales or user_is_manager %}
+                <a href="{% url 'attendance:attendance' %}" class="nav__link{% if 'attendance' in view %} is-active{% endif %}" data-tip="Attendance">
+                    <ion-icon name="location-outline"></ion-icon>
+                    <span class="nav__label">Attendance</span>
+                </a>
+                {% endif %}
+                <a href="{% url 'bankdetails:bankdetails' %}" class="nav__link{% if view == 'bankdetails:bankdetails' %} is-active{% endif %}" data-tip="Bank Details">
+                    <ion-icon name="card-outline"></ion-icon>
+                    <span class="nav__label">Bank Details</span>
+                </a>
+                <a href="{% url 'about:about' %}" class="nav__link{% if view == 'about:about' %} is-active{% endif %}" data-tip="About Us">
+                    <ion-icon name="information-circle-outline"></ion-icon>
+                    <span class="nav__label">About Us</span>
+                </a>
+                <a href="{% url 'contact:contact' %}" class="nav__link{% if view == 'contact:contact' %} is-active{% endif %}" data-tip="Contact Us">
+                    <ion-icon name="call-outline"></ion-icon>
+                    <span class="nav__label">Contact Us</span>
+                </a>
+                {% endwith %}
+            </nav>
+        </aside>
+
+        <div class="app__backdrop" id="backdrop"></div>
+
+        <div class="app__main">
+            <header class="topbar">
+                <button class="icon-btn" id="navToggle" aria-label="Toggle navigation"
+                    aria-expanded="false" aria-controls="sidebarNav">
+                    <ion-icon name="menu-outline"></ion-icon>
+                </button>
+                <!---searches every product as you type; press / to jump here -->
+                <div class="search" data-suggest data-suggest-url="{% url 'products:suggest' %}"
+                    data-suggest-list="{% url 'products:products' %}">
+                    <ion-icon name="search-outline"></ion-icon>
+                    <input type="search" placeholder="Search products by name, part no or brand…"
+                        aria-label="Search products" autocomplete="off" role="combobox"
+                        aria-expanded="false" aria-autocomplete="list" aria-controls="searchHits">
+                    <kbd>/</kbd>
+                    <div class="search__panel" id="searchHits" role="listbox"
+                        aria-label="Product matches" data-suggest-panel hidden></div>
+                </div>
+                <div class="topbar__actions">
+                    <button class="icon-btn" id="themeToggle" aria-label="Toggle dark mode">
+                        <ion-icon name="moon-outline"></ion-icon>
+                    </button>
+                    <button class="icon-btn" data-dot aria-label="Notifications">
+                        <ion-icon name="notifications-outline"></ion-icon>
+                    </button>
+                    <div class="menu">
+                        <button class="menu__trigger" id="userMenuBtn" aria-haspopup="true"
+                            aria-expanded="false" aria-controls="userMenu" aria-label="Account menu">
+                            <span class="avatar avatar--sm">
+                                <img src="{% static 'assets/imgs/customer01.jpg' %}" alt="">
+                            </span>
+                            <ion-icon class="menu__caret" name="chevron-down-outline"></ion-icon>
+                        </button>
+
+                        <div class="menu__panel" id="userMenu" role="menu" hidden>
+                            <div class="menu__header">
+                                <span class="avatar" data-status="online">
+                                    <img src="{% static 'assets/imgs/customer01.jpg' %}" alt="">
+                                </span>
+                                <div class="grow truncate">
+                                    {% if user.is_authenticated %}
+                                    <strong>{{ user.get_full_name|default:user.username }}</strong>
+                                    <small>{{ user.email|default:"no email on this account" }}</small>
+                                    {% else %}
+                                    <strong>Not signed in</strong>
+                                    <small>Sign in to place orders</small>
+                                    {% endif %}
+                                </div>
+                            </div>
+
+                            <div class="menu__sep"></div>
+
+                            {% if user.is_authenticated %}
+                            <a href="{% url 'delaer:mydealer' %}" class="menu__item" role="menuitem">
+                                <ion-icon name="storefront-outline"></ion-icon> Dealer Profile
+                            </a>
+                            {% if user.is_staff %}
+                            <a href="/admin/" class="menu__item" role="menuitem">
+                                <ion-icon name="settings-outline"></ion-icon> Admin
+                            </a>
+                            {% endif %}
+
+                            <div class="menu__sep"></div>
+
+                            <!---Django's LogoutView only accepts POST, so a plain
+                                 link cannot sign you out -->
+                            <form method="post" action="{% url 'logout' %}">
+                                {% csrf_token %}
+                                <button type="submit" class="menu__item menu__item--danger" role="menuitem">
+                                    <ion-icon name="log-out-outline"></ion-icon> Sign Out
+                                </button>
+                            </form>
+                            {% else %}
+                            <a href="{% url 'login' %}" class="menu__item" role="menuitem">
+                                <ion-icon name="log-in-outline"></ion-icon> Sign In
+                            </a>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+            </header>
+
+            <main class="content">
+
+                <!---Flash messages, rendered here for every page rather than
+                     page by page.
+
+                     A message sits in the session until a template actually
+                     loops over it. Pages that never did — the product list,
+                     the dashboard — left theirs queued, and it then appeared
+                     on whatever page the person opened next: "Set up your
+                     dealer profile" turning up on Payments, and so on.
+                     Rendering once in the base means a message is always
+                     consumed by the very next page, whichever app it is. -->
+                {% if messages %}
+                <div class="flash">
+                    {% for message in messages %}
+                    <div class="form-alert{% if message.tags == 'success' %} form-alert--ok{% endif %}">
+                        {{ message }}
+                    </div>
+                    {% endfor %}
+                </div>
+                {% endif %}
+
+                <div class="page-head">
+                    <div>
+                        <nav class="breadcrumb" aria-label="Breadcrumb">
+                            <a href="../Dashboard/dashboard.html">Home</a><span>/</span><span>{% block page_path %}My Base File{% endblock %}</span>
+                        </nav>
+
+                        <h1 class="page-title">{% block page_title %}My Base File{% endblock %}</h1>
+                        <!---each page supplies its own subtitle paragraph,
+                             so a page without one leaves nothing behind -->
+                        {% block page_sub %}{% endblock %}
+                    </div>
+
+
+                    {% block content %}
+                    {% endblock %}
+
+                  <!-- <div class="page-head__actions">
+                        <button class="btn btn--ghost">
+                            <ion-icon name="cloud-upload-outline"></ion-icon> Import
+                        </button>
+                        <button class="btn btn--primary">
+                            <ion-icon name="add-outline"></ion-icon> Add Product
+                        </button>
+                </div>
+
+                </div>
+
+                <section class="grid grid--cards">
+                    <article class="stat" style="--stat-color: var(--primary-500)">
+                        <div class="stat__top">
+                            <span class="stat__label">Total Products</span>
+                            <span class="stat__icon"><ion-icon name="cube-outline"></ion-icon></span>
+                        </div>
+                        <div>
+                            <div class="stat__value">482</div>
+                        </div>
+                    </article>
+                    <article class="stat" style="--stat-color: var(--accent-500)">
+                        <div class="stat__top">
+                            <span class="stat__label">In Stock</span>
+                            <span class="stat__icon"><ion-icon name="checkmark-circle-outline"></ion-icon></span>
+                        </div>
+                        <div>
+                            <div class="stat__value">438</div>
+                        </div>
+                    </article>
+                    <article class="stat" style="--stat-color: #f59e0b">
+                        <div class="stat__top">
+                            <span class="stat__label">Low Stock</span>
+                            <span class="stat__icon"><ion-icon name="alert-circle-outline"></ion-icon></span>
+                        </div>
+                        <div>
+                            <div class="stat__value">12</div>
+                        </div>
+                    </article>
+                    <article class="stat" style="--stat-color: var(--danger)">
+                        <div class="stat__top">
+                            <span class="stat__label">Out of Stock</span>
+                            <span class="stat__icon"><ion-icon name="close-circle-outline"></ion-icon></span>
+                        </div>
+                        <div>
+                            <div class="stat__value">32</div>
+                        </div>
+                    </article>
+                </section>
+                
+
+                <section class="panel">
+                    <div class="toolbar">
+                        <div class="search">
+                            <ion-icon name="search-outline"></ion-icon>
+                            <input type="search" placeholder="Filter products…" aria-label="Filter products"
+                                data-search-target="#productsTable">
+                        </div>
+                        <div class="segment" role="group" aria-label="Filter by stock"
+                            data-filter-target="#productsTable">
+                            <button class="is-active" data-filter="all">All</button>
+                            <button data-filter="instock">In stock</button>
+                            <button data-filter="low">Low</button>
+                            <button data-filter="out">Out</button>
+                        </div>
+                        <div class="toolbar__spacer"></div>
+                        <button class="btn btn--ghost btn--sm">
+                            <ion-icon name="download-outline"></ion-icon> Export
+                        </button>
+                    </div>
+
+                    <div class="table-wrap">
+                        <table class="table table--stack" id="productsTable">
+                            <thead>
+                                <tr>
+                                    <th>Product</th>
+                                    <th>SKU</th>
+                                    <th>Category</th>
+                                    <th class="num">Price</th>
+                                    <th class="num">Stock</th>
+                                    <th>Status</th>
+                                    <th class="actions"><span class="sr-only">Actions</span></th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr data-status="instock">
+                                    <td data-label="Product">
+                                        <div class="cell-user">
+                                            <span class="avatar avatar--sm">SR</span>
+                                            <div><strong>Star Refrigerator 340L</strong><small>Star</small></div>
+                                        </div>
+                                    </td>
+                                    <td data-label="SKU"><code class="dim">SKU-1041</code></td>
+                                    <td data-label="Category">Appliances</td>
+                                    <td data-label="Price" class="num">$1,200</td>
+                                    <td data-label="Stock" class="num">48</td>
+                                    <td data-label="Status"><span class="badge badge--success">In stock</span></td>
+                                    <td class="actions">
+                                        <button class="icon-btn" aria-label="Product actions"><ion-icon name="ellipsis-horizontal"></ion-icon></button>
+                                    </td>
+                                </tr>
+                                <tr data-status="instock">
+                                    <td data-label="Product">
+                                        <div class="cell-user">
+                                            <span class="avatar avatar--sm">DL</span>
+                                            <div><strong>Dell Inspiron 15</strong><small>Dell</small></div>
+                                        </div>
+                                    </td>
+                                    <td data-label="SKU"><code class="dim">SKU-2277</code></td>
+                                    <td data-label="Category">Electronics</td>
+                                    <td data-label="Price" class="num">$640</td>
+                                    <td data-label="Stock" class="num">26</td>
+                                    <td data-label="Status"><span class="badge badge--success">In stock</span></td>
+                                    <td class="actions">
+                                        <button class="icon-btn" aria-label="Product actions"><ion-icon name="ellipsis-horizontal"></ion-icon></button>
+                                    </td>
+                                </tr>
+                                <tr data-status="low">
+                                    <td data-label="Product">
+                                        <div class="cell-user">
+                                            <span class="avatar avatar--sm">AW</span>
+                                            <div><strong>Apple Watch Series 9</strong><small>Apple</small></div>
+                                        </div>
+                                    </td>
+                                    <td data-label="SKU"><code class="dim">SKU-3390</code></td>
+                                    <td data-label="Category">Wearables</td>
+                                    <td data-label="Price" class="num">$420</td>
+                                    <td data-label="Stock" class="num">4</td>
+                                    <td data-label="Status"><span class="badge badge--warning">Low stock</span></td>
+                                    <td class="actions">
+                                        <button class="icon-btn" aria-label="Product actions"><ion-icon name="ellipsis-horizontal"></ion-icon></button>
+                                    </td>
+                                </tr>
+                                <tr data-status="out">
+                                    <td data-label="Product">
+                                        <div class="cell-user">
+                                            <span class="avatar avatar--sm">AS</span>
+                                            <div><strong>Adidas Ultraboost</strong><small>Adidas</small></div>
+                                        </div>
+                                    </td>
+                                    <td data-label="SKU"><code class="dim">SKU-4102</code></td>
+                                    <td data-label="Category">Footwear</td>
+                                    <td data-label="Price" class="num">$180</td>
+                                    <td data-label="Stock" class="num">0</td>
+                                    <td data-label="Status"><span class="badge badge--danger">Out of stock</span></td>
+                                    <td class="actions">
+                                        <button class="icon-btn" aria-label="Product actions"><ion-icon name="ellipsis-horizontal"></ion-icon></button>
+                                    </td>
+                                </tr>
+                                <tr data-status="instock">
+                                    <td data-label="Product">
+                                        <div class="cell-user">
+                                            <span class="avatar avatar--sm">SH</span>
+                                            <div><strong>Sony WH-1000XM5</strong><small>Sony</small></div>
+                                        </div>
+                                    </td>
+                                    <td data-label="SKU"><code class="dim">SKU-5518</code></td>
+                                    <td data-label="Category">Electronics</td>
+                                    <td data-label="Price" class="num">$340</td>
+                                    <td data-label="Stock" class="num">61</td>
+                                    <td data-label="Status"><span class="badge badge--success">In stock</span></td>
+                                    <td class="actions">
+                                        <button class="icon-btn" aria-label="Product actions"><ion-icon name="ellipsis-horizontal"></ion-icon></button>
+                                    </td>
+                                </tr>
+                                <tr data-status="low">
+                                    <td data-label="Product">
+                                        <div class="cell-user">
+                                            <span class="avatar avatar--sm">SM</span>
+                                            <div><strong>Samsung 27" Monitor</strong><small>Samsung</small></div>
+                                        </div>
+                                    </td>
+                                    <td data-label="SKU"><code class="dim">SKU-6203</code></td>
+                                    <td data-label="Category">Electronics</td>
+                                    <td data-label="Price" class="num">$480</td>
+                                    <td data-label="Stock" class="num">6</td>
+                                    <td data-label="Status"><span class="badge badge--warning">Low stock</span></td>
+                                    <td class="actions">
+                                        <button class="icon-btn" aria-label="Product actions"><ion-icon name="ellipsis-horizontal"></ion-icon></button>
+                                    </td>
+                                </tr>
+                                <tr data-status="instock">
+                                    <td data-label="Product">
+                                        <div class="cell-user">
+                                            <span class="avatar avatar--sm">LK</span>
+                                            <div><strong>Logitech MX Keys</strong><small>Logitech</small></div>
+                                        </div>
+                                    </td>
+                                    <td data-label="SKU"><code class="dim">SKU-7714</code></td>
+                                    <td data-label="Category">Accessories</td>
+                                    <td data-label="Price" class="num">$95</td>
+                                    <td data-label="Stock" class="num">112</td>
+                                    <td data-label="Status"><span class="badge badge--success">In stock</span></td>
+                                    <td class="actions">
+                                        <button class="icon-btn" aria-label="Product actions"><ion-icon name="ellipsis-horizontal"></ion-icon></button>
+                                    </td>
+                                </tr>
+                                <tr data-status="out">
+                                    <td data-label="Product">
+                                        <div class="cell-user">
+                                            <span class="avatar avatar--sm">CC</span>
+                                            <div><strong>Canon EOS R50</strong><small>Canon</small></div>
+                                        </div>
+                                    </td>
+                                    <td data-label="SKU"><code class="dim">SKU-8829</code></td>
+                                    <td data-label="Category">Cameras</td>
+                                    <td data-label="Price" class="num">$1,850</td>
+                                    <td data-label="Stock" class="num">0</td>
+                                    <td data-label="Status"><span class="badge badge--danger">Out of stock</span></td>
+                                    <td class="actions">
+                                        <button class="icon-btn" aria-label="Product actions"><ion-icon name="ellipsis-horizontal"></ion-icon></button>
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+
+                    <div class="empty" data-empty hidden>
+                        <ion-icon name="cube-outline"></ion-icon>
+                        <h3>No products found</h3>
+                        <p>Nothing matches that filter. Try another stock state or clear the search.</p>
+                    </div>
+
+                    <div class="panel__foot">
+                        <div class="pagination">
+                            <span class="muted">Showing <strong>1–8</strong> of <strong>482</strong></span>
+                            <div class="pagination__pages">
+                                <button disabled aria-label="Previous page"><ion-icon name="chevron-back-outline"></ion-icon></button>
+                                <button class="is-active">1</button>
+                                <button>2</button>
+                                <button>3</button>
+                                <button aria-label="Next page"><ion-icon name="chevron-forward-outline"></ion-icon></button>
+                            </div>
+                        </div>-->
+
+            {% comment %}
+            The </div> and </section> that used to sit here were orphans: the
+            tags they close are inside the commented-out demo block above, so
+            on every rendered page they closed .app__main early. That put the
+            page content outside its own container, which is why a wide table
+            dragged the whole window sideways instead of scrolling inside its
+            own panel. Every page's content block already closes the .page-head
+            that is opened further up.
+            {% endcomment %}
+
+            </main>
+
+        </div>
+    </div>
+
+    <script src="{% static 'assets/js/shell.js' %}"></script>
+    <script src="{% static 'assets/js/main.js' %}"></script>
+    <script type="module" src="https://unpkg.com/ionicons@5.5.2/dist/ionicons/ionicons.esm.js"></script>
+    <script nomodule src="https://unpkg.com/ionicons@5.5.2/dist/ionicons/ionicons.js"></script>
+</body>
+
+</html>

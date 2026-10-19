@@ -1,0 +1,7 @@
+{% comment %}
+What the shop returns to a live search: every region the filter changes, in
+one response. The script picks each one out by id, so the order here does not
+have to match where they sit on the page.
+{% endcomment %}
+{% include "orders/_shop_filters.html" %}
+{% include "orders/_shop_grid.html" %}

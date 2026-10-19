@@ -1,0 +1,46 @@
+{% extends "mybase.html" %}
+{% load static %}
+
+{% block title %}New Arrivals{% endblock %}
+
+{% block page_path %}New Arrivals{% endblock %}
+
+{% block page_title %}New Arrivals{% endblock %}
+
+
+{% block content %}
+
+<div class="page-head__actions">
+    <a class="btn btn--ghost" href="{% url 'catelog:catelog' %}">
+        <ion-icon name="albums-outline"></ion-icon> Catelogs
+    </a>
+</div>
+
+</div>
+
+
+<!---products flagged 'new arrival', whatever catelog they belong to -->
+
+<section class="panel">
+    <div class="toolbar">
+        <div class="search">
+            <ion-icon name="search-outline"></ion-icon>
+            <input type="search" placeholder="Filter products…" aria-label="Filter products"
+                data-search-target="#newArrivals">
+        </div>
+        <div class="toolbar__spacer"></div>
+        {% for l in lists %}<span class="badge badge--info">{{ l.name }}</span>{% endfor %}
+        <span class="muted"><span data-visible-count>{{ products|length }}</span> of {{ products|length }} product{{ products|length|pluralize }}</span>
+    </div>
+
+    {% include "catelog/_product_cards.html" with grid_id="newArrivals" empty_title="No new arrivals" empty_text="Tick 'New arrival' on a product to list it here." %}
+
+    <!---shown when the filter above hides every card -->
+    <div class="empty" data-empty hidden>
+        <ion-icon name="search-outline"></ion-icon>
+        <h3>No products match</h3>
+        <p>Nothing here matches what you typed. Clear the box to see them all.</p>
+    </div>
+</section>
+
+{% endblock %}

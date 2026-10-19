@@ -1,0 +1,138 @@
+{% comment %}
+The filter bar every report shares, in the same shape as the order table's:
+a search box, a segment, a compact form, then the spacer and a summary.
+
+Three controls, all plain GET:
+  * search      — matches whatever that report says it matches
+  * period      — All time / Monthly / Yearly / Custom range
+  * the control that period needs — a month picker, a year box, or from–to
+
+Each one carries the others along in hidden fields, so applying a filter
+never silently clears another, and the resulting URL can be bookmarked.
+
+Everything but the search box sits in a live region, so a filter swaps in
+without the page reloading. The search box itself is left out of the region
+on purpose: replacing it mid-keystroke would eat the caret.
+{% endcomment %}
+
+<div class="toolbar toolbar--report">
+    <form class="search" method="get" data-live-form>
+        <ion-icon name="search-outline"></ion-icon>
+        <input type="search" name="q" value="{{ search }}" autocomplete="off"
+               placeholder="{{ search_hint|default:'Search this report…' }}"
+               aria-label="Search this report">
+        <!---the period travels with the search, or searching would reset it -->
+        <input type="hidden" name="period" value="{{ period }}">
+        {% if period == 'month' %}<input type="hidden" name="month" value="{{ month }}">{% endif %}
+        {% if period == 'year' %}<input type="hidden" name="year" value="{{ year }}">{% endif %}
+        {% if period == 'range' %}
+        <input type="hidden" name="from" value="{{ from_value }}">
+        <input type="hidden" name="to" value="{{ to_value }}">
+        {% endif %}
+        {% if dealer_id %}<input type="hidden" name="dealer" value="{{ dealer_id }}">{% endif %}
+        {% if sales_id %}<input type="hidden" name="sales" value="{{ sales_id }}">{% endif %}
+    </form>
+
+    <!---display:contents, so these stay direct flex children of .toolbar -->
+    <div id="reportFilters" data-live-region>
+
+    <!---each link keeps the search and dealer that are already set -->
+    <div class="segment" role="group" aria-label="Filter by period">
+        {% for value, name in periods %}
+        <a class="btn btn--sm {% if period == value %}is-active{% endif %}"
+           href="?period={{ value }}{% if keep %}&{{ keep }}{% endif %}">{{ name }}</a>
+        {% endfor %}
+    </div>
+
+    <!---only the control the chosen period actually needs is shown -->
+    <form method="get" class="range-filter" data-live-form>
+        <input type="hidden" name="period" value="{{ period }}">
+        {% if search %}<input type="hidden" name="q" value="{{ search }}">{% endif %}
+
+        {% if is_manager %}
+        <select class="select" name="dealer" aria-label="Filter by dealer">
+            <option value="">All dealers</option>
+            {% for d in dealers %}
+            <option value="{{ d.pk }}" {% if dealer_id == d.pk|stringformat:"s" %}selected{% endif %}>{{ d.name }}</option>
+            {% endfor %}
+        </select>
+
+        <!---a salesman needs no such picker: they only ever see their own -->
+        <select class="select" name="sales" aria-label="Filter by sales executive">
+            <option value="">All executives</option>
+            <option value="direct" {% if sales_id == 'direct' %}selected{% endif %}>Direct (dealer's own)</option>
+            {% for e in sales_people %}
+            <option value="{{ e.pk }}" {% if sales_id == e.pk|stringformat:"s" %}selected{% endif %}>{{ e.name }}</option>
+            {% endfor %}
+        </select>
+        {% endif %}
+
+        {% if period == 'month' %}
+        <span class="range-filter__dates">
+            <ion-icon name="calendar-outline"></ion-icon>
+            <input class="input" type="month" name="month" value="{{ month }}"
+                   aria-label="Month">
+        </span>
+        {% elif period == 'year' %}
+        <span class="range-filter__dates">
+            <ion-icon name="calendar-outline"></ion-icon>
+            <input class="input" type="number" name="year" value="{{ year }}"
+                   min="2000" max="2099" step="1" aria-label="Year">
+        </span>
+        {% elif period == 'range' %}
+        <!---one compact control: calendar, from – to; either end may be blank -->
+        <span class="range-filter__dates">
+            <ion-icon name="calendar-outline"></ion-icon>
+            <input class="input" type="date" name="from" value="{{ from_value }}"
+                   aria-label="From date">
+            <span class="range-filter__dash">&ndash;</span>
+            <input class="input" type="date" name="to" value="{{ to_value }}"
+                   aria-label="To date">
+        </span>
+        {% endif %}
+
+        {% if period != 'all' or is_manager %}
+        <button class="btn btn--primary btn--sm" type="submit"
+                title="Apply filter" aria-label="Apply filter">
+            <ion-icon name="funnel-outline"></ion-icon>
+        </button>
+        {% endif %}
+
+        {% if search or dealer_id or period != 'all' %}
+        <a class="btn btn--ghost btn--sm" title="Clear filter" aria-label="Clear filter"
+           href="?">
+            <ion-icon name="close-outline"></ion-icon>
+        </a>
+        {% endif %}
+    </form>
+
+    <div class="toolbar__spacer"></div>
+
+    <!---exports the filtered report, not everything: the links carry the same
+         query string the page was loaded with. <details> so the dropdown
+         needs no javascript, exactly as the order list does it. -->
+    <details class="export-menu">
+        <summary class="btn btn--ghost btn--sm">
+            <ion-icon name="download-outline"></ion-icon> Export
+            <ion-icon name="chevron-down-outline"></ion-icon>
+        </summary>
+        <div class="menu__panel export-menu__panel">
+            <a class="menu__item" href="{% url 'reports:export' card.slug 'pdf' %}{% if query %}?{{ query }}{% endif %}">
+                <ion-icon name="document-text-outline"></ion-icon> PDF
+            </a>
+            <a class="menu__item" href="{% url 'reports:export' card.slug 'csv' %}{% if query %}?{{ query }}{% endif %}">
+                <ion-icon name="document-outline"></ion-icon> CSV
+            </a>
+            <a class="menu__item" href="{% url 'reports:export' card.slug 'excel' %}{% if query %}?{{ query }}{% endif %}">
+                <ion-icon name="grid-outline"></ion-icon> Excel
+            </a>
+        </div>
+    </details>
+
+    <span class="muted">
+        <span class="badge badge--info">{{ label }}</span>
+        {% if is_manager %}<span class="badge badge--neutral">Management</span>{% endif %}
+    </span>
+
+    </div><!--- /#reportFilters -->
+</div>

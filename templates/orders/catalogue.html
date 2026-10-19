@@ -1,0 +1,146 @@
+
+{% extends "mybase.html" %}
+{% load static %}
+
+{% block title %}Shop{% endblock %}
+
+{% block page_path %}Order{% endblock %}
+
+{% block page_title %}Select Products{% endblock %}
+
+
+{% block content %}
+
+<div class="page-head__actions">
+    <a class="btn btn--ghost" href="{% url 'myorder:myorder' %}">
+        <ion-icon name="list-outline"></ion-icon> All Orders
+    </a>
+</div>
+
+</div>
+
+
+
+<!---A salesman buys on behalf of a dealer, so they choose one first and it
+     sticks until they change it. A dealer ordering for themselves never sees
+     this — the account they signed in with is the answer. -->
+
+{% if sales %}
+<section class="panel acting-bar">
+    <form method="post" class="acting-bar__form" action="{% url 'myorder:catalogue' %}">
+        {% csrf_token %}
+        <span class="acting-bar__who">
+            <ion-icon name="person-circle-outline"></ion-icon>
+            <span>
+                <strong>{{ sales.name }}</strong>
+                <small class="muted">{{ sales.code }}{% if sales.territory %} &middot; {{ sales.territory }}{% endif %}</small>
+            </span>
+        </span>
+
+        <label class="acting-bar__label" for="actingDealer">Ordering for</label>
+        <select class="select" name="dealer" id="actingDealer">
+            <option value="">Choose a dealer…</option>
+            {% for d in dealers %}
+            <option value="{{ d.pk }}" {% if acting_dealer and acting_dealer.pk == d.pk %}selected{% endif %}>
+                {{ d.name }}{% if d.state %} — {{ d.state }}{% endif %}
+            </option>
+            {% endfor %}
+        </select>
+
+        <button class="btn btn--primary btn--sm" type="submit">
+            <ion-icon name="checkmark-outline"></ion-icon> Set
+        </button>
+
+        {% if acting_dealer %}
+        <span class="muted">This order will be recorded in your name.</span>
+        {% endif %}
+    </form>
+</section>
+
+{% if not acting_dealer %}
+<div class="empty">
+    <ion-icon name="people-outline"></ion-icon>
+    <h3>Choose a dealer to start</h3>
+    <p>Pick the dealer this order is for. Everything you add then goes onto
+       their order, raised in your name.</p>
+</div>
+{% endif %}
+{% endif %}
+
+
+<!---Every product from the products app, as a card -->
+
+<!---data-live: the search box and the filter links fetch just the cards and
+     swap them in, so finding a product never reloads the page. The filtering
+     still runs in the database, so it covers every product and not only the
+     cards already on screen. Without JS this is a plain GET form and plain
+     links, and behaves exactly as it did before. -->
+
+{% if acting_dealer %}
+<section class="panel" data-live data-live-url="{% url 'myorder:catalogue' %}">
+    <div class="toolbar">
+        <form class="search" method="get" data-live-form action="{% url 'myorder:catalogue' %}">
+            <ion-icon name="search-outline"></ion-icon>
+            <input type="search" name="q" value="{{ search }}" autocomplete="off"
+                placeholder="Search products…" aria-label="Search products"
+                aria-controls="shopGrid">
+            <!---only for the no-JS path, so submitting the form keeps the stock
+                 filter; with JS the script never reads this form -->
+            {% if status != 'all' %}<input type="hidden" name="status" value="{{ status }}">{% endif %}
+        </form>
+
+        {% include "orders/_shop_filters.html" %}
+    </div>
+
+    {% include "orders/_shop_grid.html" %}
+</section>
+{% endif %}
+
+
+<!---Live cart: the script rewrites this block after each add -->
+
+<div id="cartPanel" {% if not draft.items.all %}hidden{% endif %}>
+    <section class="panel cart-panel">
+        <div class="toolbar">
+            <h2 class="page-title">
+                <ion-icon name="cart-outline"></ion-icon>
+                Cart <code class="dim" data-cart-no>{{ draft.order_no }}</code>
+            </h2>
+            <div class="toolbar__spacer"></div>
+            <a class="btn btn--primary btn--sm" data-cart-link
+               href="{% if draft %}{% url 'myorder:edit' draft.pk %}{% else %}#{% endif %}">
+                Proceed <ion-icon name="arrow-forward-outline"></ion-icon>
+            </a>
+        </div>
+
+        <div class="table-wrap">
+            <table class="table table--mini">
+                <thead>
+                    <tr>
+                        <th>Item</th>
+                        <th class="num">Qty</th>
+                        <th class="num">Total</th>
+                    </tr>
+                </thead>
+                <tbody data-cart-rows>
+                    {% for item in draft.items.all %}
+                    <tr>
+                        <td>{{ item.product.name }}</td>
+                        <td class="num">{{ item.qty }}</td>
+                        <td class="num">{{ item.line_total }}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+                <tfoot>
+                    <tr>
+                        <td><strong>Total</strong></td>
+                        <td class="num" data-cart-qty>{{ draft.total_qty }}</td>
+                        <td class="num"><strong data-cart-total>{{ draft.total_amount }}</strong></td>
+                    </tr>
+                </tfoot>
+            </table>
+        </div>
+    </section>
+</div>
+
+{% endblock %}

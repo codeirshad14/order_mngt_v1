@@ -1,0 +1,83 @@
+{% extends "reports/_report_base.html" %}
+
+{% comment %}
+12. Sales Executive Item Mix — what each salesman actually sells.
+    Two people with the same turnover can be selling quite different
+    things, and that only shows here.
+{% endcomment %}
+
+{% block report %}
+
+<!---everything the filter changes, swapped in as one region -->
+<div id="reportResults" data-live-region>
+
+<div class="table-wrap table-wrap--tall">
+    <table class="table table--stack table--fixed">
+        <colgroup>
+            <col class="w-name">
+            <col class="w-name">
+            <col class="w-code">
+            <col class="w-name">
+            <col class="w-qty">
+            <col class="w-qty">
+            <col class="w-money">
+        </colgroup>
+        <thead>
+            <tr>
+                <th>Sales Executive</th>
+                <th>Item</th>
+                <th class="hide-sm">Part No</th>
+                <th class="hide-sm">Brand</th>
+                <th class="num">Qty</th>
+                <th class="num">Orders</th>
+                <th class="num">Total</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for row in rows %}
+            <tr class="{% if row.first_of_group %}is-group-start{% endif %}">
+                <td data-label="Sales Executive">{% if row.first_of_group %}<strong>{{ row.name }}</strong>
+                    <small class="muted">{{ row.code }}</small>{% endif %}</td>
+                <td data-label="Item"><strong>{{ row.item }}</strong></td>
+                <td data-label="Part No" class="hide-sm"><code class="dim">{{ row.partno }}</code></td>
+                <td data-label="Brand" class="hide-sm">{{ row.brand }}</td>
+                <td data-label="Qty" class="num"><strong>{{ row.qty }}</strong> {{ row.unit }}</td>
+                <td data-label="Orders" class="num">{{ row.orders }}</td>
+                <td data-label="Total" class="num"><strong>{{ row.total }}</strong></td>
+            </tr>
+            {% endfor %}
+        </tbody>
+
+        {% if rows %}
+        <tfoot>
+            <tr>
+                <td><strong>Total</strong></td>
+                <td>{{ totals.pairs }} line{{ totals.pairs|pluralize }}</td>
+                <td class="hide-sm"></td>
+                <td class="hide-sm"></td>
+                <td class="num"><strong>{{ totals.qty }}</strong></td>
+                <td class="num"></td>
+                <td class="num"><strong>{{ totals.total }}</strong></td>
+            </tr>
+        </tfoot>
+        {% endif %}
+    </table>
+</div>
+
+{% if not rows %}
+<div class="empty">
+    <ion-icon name="layers-outline"></ion-icon>
+    <h3>No items sold</h3>
+</div>
+{% endif %}
+
+<div class="panel__foot">
+    <div class="pagination">
+        <span class="muted"><strong>{{ totals.pairs }}</strong> executive-and-item line{{ totals.pairs|pluralize }} &middot; <strong>{{ totals.qty }}</strong> units &middot; net <strong>{{ totals.net }}</strong> &middot; {{ label }}</span>
+        {% include "_pagination.html" %}
+    </div>
+</div>
+
+</div><!--- /#reportResults -->
+
+{% endblock %}

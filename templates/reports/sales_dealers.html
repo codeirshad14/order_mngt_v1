@@ -1,0 +1,90 @@
+{% extends "reports/_report_base.html" %}
+
+{% comment %}
+10. Sales Executive wise Dealer — who each salesman is selling to.
+    The name shows on the first row of each group only, so the table
+    reads as groups rather than a flat list.
+{% endcomment %}
+
+{% block report %}
+
+<!---everything the filter changes, swapped in as one region -->
+<div id="reportResults" data-live-region>
+
+<div class="table-wrap table-wrap--tall">
+    <table class="table table--stack table--fixed">
+        <colgroup>
+            <col class="w-name">
+            <col class="w-name">
+            <col class="w-date">
+            <col class="w-qty">
+            <col class="w-qty">
+            <col class="w-money">
+            <col class="w-date">
+        </colgroup>
+        <thead>
+            <tr>
+                <th>Sales Executive</th>
+                <th>Dealer</th>
+                <th class="hide-sm">State</th>
+                <th class="num">Orders</th>
+                <th class="num">Qty</th>
+                <th class="num">Total</th>
+                <th class="hide-sm">Last Order</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for row in rows %}
+            <tr class="{% if row.first_of_group %}is-group-start{% endif %}">
+                <td data-label="Sales Executive">{% if row.first_of_group %}<strong>{{ row.name }}</strong>
+                    <small class="muted">{{ row.code }}</small>{% endif %}</td>
+                <!---step two of the drill-down: the orders behind this row -->
+                <td data-label="Dealer">
+                    <a class="drill" href="{% url 'reports:order_book' %}?{{ row.drill }}"
+                       title="Show {{ row.dealer }}'s orders for {{ row.name }}">
+                        <strong>{{ row.dealer }}</strong>
+                        <ion-icon name="chevron-forward-outline" aria-hidden="true"></ion-icon>
+                    </a>
+                </td>
+                <td data-label="State" class="hide-sm">{{ row.state }}</td>
+                <td data-label="Orders" class="num">{{ row.orders }}</td>
+                <td data-label="Qty" class="num">{{ row.qty }}</td>
+                <td data-label="Total" class="num"><strong>{{ row.total }}</strong></td>
+                <td data-label="Last Order" class="hide-sm cell-date">{{ row.last_on|date:"j M Y" }}</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+
+        {% if rows %}
+        <tfoot>
+            <tr>
+                <td><strong>Total</strong></td>
+                <td>{{ totals.pairs }} pairing{{ totals.pairs|pluralize }}</td>
+                <td class="hide-sm"></td>
+                <td class="num"><strong>{{ totals.orders }}</strong></td>
+                <td class="num"><strong>{{ totals.qty }}</strong></td>
+                <td class="num"><strong>{{ totals.total }}</strong></td>
+                <td class="hide-sm"></td>
+            </tr>
+        </tfoot>
+        {% endif %}
+    </table>
+</div>
+
+{% if not rows %}
+<div class="empty">
+    <ion-icon name="people-outline"></ion-icon>
+    <h3>No dealer activity</h3>
+</div>
+{% endif %}
+
+<div class="panel__foot">
+    <div class="pagination">
+        <span class="muted"><strong>{{ totals.pairs }}</strong> executive-and-dealer pairing{{ totals.pairs|pluralize }} &middot; {{ label }}</span>
+        {% include "_pagination.html" %}
+    </div>
+</div>
+
+</div><!--- /#reportResults -->
+
+{% endblock %}

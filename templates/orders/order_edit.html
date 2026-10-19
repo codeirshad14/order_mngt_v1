@@ -1,0 +1,339 @@
+﻿
+{% extends "mybase.html" %}
+{% load static %}
+
+{% block title %}{{ order.order_no }}{% endblock %}
+
+{% block page_path %}Order{% endblock %}
+
+{% block page_title %}{{ order.order_no }}{% endblock %}
+
+<!---who the order is for, right under the order number. The state and GSTIN
+     sit here too: they are what decides CGST+SGST against IGST, so the tax
+     block further down never looks arbitrary. -->
+{% block page_sub %}
+<p class="page-sub">
+    <strong>{{ order.dealer.name }}</strong>
+    {% if order.dealer.state %}&middot; {{ order.dealer.state }}{% endif %}
+    {% if order.dealer.gstin %}&middot; GSTIN <code class="dim">{{ order.dealer.gstin }}</code>{% endif %}
+    &middot; {{ order.ordered_on|date:"j M Y" }}
+
+    <!---who raised it. Display only: nothing on this page is decided by it,
+         it is here so anyone checking can tell a salesman's order from one
+         the dealer placed themselves. -->
+    &middot;
+    {% if order.is_direct %}
+    <span class="badge badge--neutral">Dealer's own order</span>
+    {% else %}
+    <span class="badge badge--info">
+        {{ order.sales_executive.name }} &middot; {{ order.sales_executive.code }}
+    </span>
+    {% endif %}
+</p>
+{% endblock %}
+
+
+{% block content %}
+
+<div class="page-head__actions">
+    <span class="badge badge--{% if order.is_draft %}warning{% else %}success{% endif %}">
+        {{ order.get_status_display }}
+    </span>
+    {% if not order.is_draft %}
+    <a class="btn btn--ghost" href="{% url 'myorder:print' order.pk %}" target="_blank">
+        <ion-icon name="print-outline"></ion-icon> Print
+    </a>
+    {% endif %}
+    {% if can_edit %}
+    <a class="btn btn--ghost" href="{% url 'myorder:catalogue' %}">
+        <ion-icon name="grid-outline"></ion-icon> Add More Items
+    </a>
+    {% endif %}
+    <a class="btn btn--ghost" href="{% url 'myorder:myorder' %}">
+        <ion-icon name="list-outline"></ion-icon> All Orders
+    </a>
+</div>
+
+</div>
+
+{% if not mine %}
+<!---a manager looking at someone else's order: visible, not editable.
+     The dealer is named in the page header, so this only has to say why
+     nothing here can be changed. -->
+<div class="form-alert">
+    Read-only &mdash; only the dealer this order belongs to can change it.
+</div>
+{% endif %}
+
+
+
+{% if can_edit %}
+<!---Add a line: pick product, set qty. Price comes from the product master. -->
+
+<section class="panel">
+    <div class="toolbar">
+        <h2 class="page-title">Add item</h2>
+    </div>
+
+    <form method="post" novalidate action="{% url 'myorder:edit' order.pk %}">
+        {% csrf_token %}
+        <div class="modal__body">
+            <div class="form-grid">
+                {% for field in form %}
+                <div class="field">
+                    <label for="{{ field.id_for_label }}">{{ field.label }}</label>
+                    {{ field }}
+                    {% if field.name == 'product' %}<small class="hint" data-picker-hint></small>{% endif %}
+                    {% if field.errors %}<small class="field-error">{{ field.errors|striptags }}</small>{% endif %}
+                </div>
+                {% endfor %}
+                <div class="field">
+                    <label>&nbsp;</label>
+                    <button class="btn btn--primary" type="submit">
+                        <ion-icon name="add-outline"></ion-icon> Add to Order
+                    </button>
+                </div>
+            </div>
+        </div>
+    </form>
+</section>
+{% endif %}
+
+
+<!---The order lines -->
+
+<section class="panel">
+    <div class="toolbar">
+        <h2 class="page-title">Items</h2>
+        <div class="toolbar__spacer"></div>
+        <span class="muted">{{ order.ordered_on|date:"j M Y" }}</span>
+    </div>
+
+    <div class="table-wrap">
+        <!---ten columns will not fit a panel at the default gutters, so the
+             widths are set here and the product name wraps into its own
+             column instead of the table scrolling sideways -->
+        <table class="table table--stack table--fixed">
+            <colgroup>
+                <col class="w-img"><col class="w-name"><col class="w-code">
+                <col class="w-qty"><col class="w-money"><col class="w-money">
+                <col class="w-pct"><col class="w-money"><col class="w-money">
+                <col class="w-act">
+            </colgroup>
+            <thead>
+                <tr>
+                    <th class="hide-sm">Image</th>
+                    <th>Product</th>
+                    <th class="hide-sm">Part No</th>
+                    <th class="num">Qty</th>
+                    <th class="num hide-sm">Rate</th>
+                    <th class="num hide-sm">Taxable</th>
+                    <th class="num">GST %</th>
+                    <!---GST amount stays on small screens: it is the figure
+                         being checked, so hiding it defeats the page -->
+                    <th class="num">GST</th>
+                    <th class="num">Total</th>
+                    <th class="actions"><span class="sr-only">Remove</span></th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for item in order.items.all %}
+                <tr>
+                    <td data-label="Image" class="hide-sm">
+                        <img class="cell-img" src="{{ item.product.front_url }}" alt="" loading="lazy">
+                    </td>
+                    <td data-label="Product">
+                        <div class="cell-user">
+                            <div>
+                                <a href="{% url 'products:detail' item.product.pk %}"><strong>{{ item.product.name }}</strong></a>
+                                <small>{{ item.product.brand }}</small>
+                            </div>
+                        </div>
+                    </td>
+                    <td data-label="Part No" class="hide-sm"><code class="dim">{{ item.product.partno }}</code></td>
+                    <td data-label="Qty" class="num">{{ item.qty }} {{ item.product.unit }}</td>
+                    <td data-label="Rate" class="num hide-sm">{{ item.rate }}</td>
+                    <td data-label="Taxable" class="num hide-sm">{{ item.line_net }}</td>
+                    <td data-label="GST %" class="num">{{ item.gst|floatformat:"-2" }}%</td>
+                    <td data-label="GST" class="num">{{ item.line_gst }}</td>
+                    <td data-label="Total" class="num"><strong>{{ item.line_total }}</strong></td>
+                    <td class="actions">
+                        {% if can_edit %}
+                        <form method="post" action="{% url 'myorder:remove_item' order.pk item.pk %}">
+                            {% csrf_token %}
+                            <button class="icon-btn" type="submit" aria-label="Remove item">
+                                <ion-icon name="trash-outline"></ion-icon>
+                            </button>
+                        </form>
+                        {% endif %}
+                    </td>
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="10">
+                        <div class="empty">
+                            <ion-icon name="cart-outline"></ion-icon>
+                            <h3>Nothing in this order yet</h3>
+                            <p>Pick a product above and set a quantity.</p>
+                        </div>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+
+    {% if order.items.all %}
+    <div class="panel__foot">
+        <div class="table-wrap">
+        <table class="om-totals">
+            <tr><td>Taxable value</td><td class="num">{{ order.total_net }}</td></tr>
+            {% if same_state %}
+            <tr><td>CGST</td><td class="num">{{ cgst }}</td></tr>
+            <tr><td>SGST</td><td class="num">{{ sgst }}</td></tr>
+            {% else %}
+            <tr><td>IGST</td><td class="num">{{ igst }}</td></tr>
+            {% endif %}
+            <tr><td>Total GST</td><td class="num">{{ order.total_gst }}</td></tr>
+            <tr class="om-totals__grand"><td>Grand total</td><td class="num">{{ order.total_amount }}</td></tr>
+        </table>
+        </div>
+    </div>
+    {% endif %}
+</section>
+
+
+<!---GST worked out per rate — what the invoice will print -->
+
+{% if order.items.all %}
+<section class="panel">
+    <div class="toolbar">
+        <h2 class="page-title">Tax Details</h2>
+        <div class="toolbar__spacer"></div>
+        <span class="muted">
+            {% if same_state %}Intra-state &middot; CGST + SGST{% else %}Inter-state &middot; IGST{% endif %}
+            {% if order.dealer.state %}&middot; {{ order.dealer.state }}{% endif %}
+        </span>
+    </div>
+
+    {% comment %}
+    The partial brings its own .table-wrap now, so it scrolls wherever it is
+    included — no need to wrap it a second time here.
+    {% endcomment %}
+    {% include "orders/_tax_summary.html" with table_class="table table--stack" %}
+</section>
+{% endif %}
+
+
+<!---Stock check. Advisory: it says what is true right now, so nobody is sent
+     to a button that will fail. finalise() checks again inside a locked
+     transaction, because stock moves while a draft sits open. -->
+
+{% if can_edit and order.items.all %}
+<section class="panel">
+    <div class="toolbar">
+        <h2 class="page-title">Stock Check</h2>
+        <div class="toolbar__spacer"></div>
+        <!---no icon inside: .badge draws its own dot -->
+        {% if order.stock_ok %}
+        <span class="badge badge--success">Ready to place</span>
+        {% else %}
+        <span class="badge badge--danger">
+            {{ order.short_items|length }} item{{ order.short_items|length|pluralize }} not available
+        </span>
+        {% endif %}
+    </div>
+
+    <ul class="checklist">
+        {% for item in order.items.all %}
+        <li class="checklist__row{% if item.is_short %} is-short{% endif %}">
+            <ion-icon class="checklist__mark"
+                name="{% if item.is_short %}close-circle{% else %}checkmark-circle{% endif %}"></ion-icon>
+
+            <span class="checklist__name">
+                {{ item.product.name }}
+                <small class="muted">{{ item.product.partno }}</small>
+            </span>
+
+            <span class="checklist__note">
+                {% if item.is_short %}
+                Ordered <strong>{{ item.qty }}</strong> &middot;
+                only <strong>{{ item.in_stock }}</strong> in stock &middot;
+                <strong>{{ item.shortfall }}</strong> short
+                {% else %}
+                Ordered <strong>{{ item.qty }}</strong> of
+                <strong>{{ item.in_stock }}</strong> in stock
+                {% endif %}
+            </span>
+
+            {% if item.is_short %}
+            <form method="post" action="{% url 'myorder:remove_item' order.pk item.pk %}">
+                {% csrf_token %}
+                <button class="btn btn--ghost btn--sm" type="submit">
+                    <ion-icon name="trash-outline"></ion-icon> Remove
+                </button>
+            </form>
+            {% endif %}
+        </li>
+        {% endfor %}
+    </ul>
+</section>
+{% endif %}
+
+
+{% if can_edit and order.items.all %}
+<div class="order-actions">
+    {% if order.stock_ok %}
+    <form method="post" action="{% url 'myorder:finalise' order.pk %}">
+        {% csrf_token %}
+        <button class="btn btn--primary" type="submit">
+            <ion-icon name="checkmark-done-outline"></ion-icon> Place Order
+        </button>
+    </form>
+    {% else %}
+    <!---no form at all, so the order cannot be placed by pressing Enter -->
+    <button class="btn btn--primary" type="button" disabled
+            title="Some items are not available in the quantity ordered">
+        <ion-icon name="checkmark-done-outline"></ion-icon> Place Order
+    </button>
+    <span class="hint hint--bad">
+        <ion-icon name="alert-circle-outline"></ion-icon>
+        Stock is not available for
+        {% for item in order.short_items %}<strong>{{ item.product.name }}</strong>{% if not forloop.last %}, {% endif %}{% endfor %}.
+        Remove the line above, then add it again with a quantity that fits.
+    </span>
+    {% endif %}
+
+    <!---park this one and start another; continue it later the same day -->
+    <form method="post" action="{% url 'myorder:hold' order.pk %}">
+        {% csrf_token %}
+        <button class="btn btn--ghost" type="submit">
+            <ion-icon name="pause-outline"></ion-icon> Hold Order
+        </button>
+    </form>
+
+    <span class="hint">Holding keeps the order open so you can start another and come back to it today.</span>
+</div>
+{% endif %}
+
+{% if order.is_hold and mine %}
+<div class="order-actions">
+    {% if order.can_resume %}
+    <form method="post" action="{% url 'myorder:resume' order.pk %}">
+        {% csrf_token %}
+        <button class="btn btn--primary" type="submit">
+            <ion-icon name="play-outline"></ion-icon> Continue Order
+        </button>
+    </form>
+    <span class="hint">This order is on hold. Continue it to add more items or place it.</span>
+    {% else %}
+    <span class="hint">
+        On hold since {{ order.ordered_on|date:"j M Y" }} — a held order can only be
+        continued on the same date.
+    </span>
+    {% endif %}
+</div>
+{% endif %}
+
+{% endblock %}
+

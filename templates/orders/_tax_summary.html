@@ -1,0 +1,68 @@
+{% comment %}
+GST worked out per HSN and rate — the tax block an invoice is checked
+against. Shared by the order page and the printed invoice, so the two can
+never disagree.
+
+Expects: tax_rows, same_state, order. Optional: table_class.
+
+Intra-state splits each slab in half (28% -> CGST 14% + SGST 14%);
+inter-state carries the whole slab as IGST.
+{% endcomment %}
+
+<div class="table-wrap">
+<table class="{{ table_class|default:'table table--mini' }}">
+    <thead>
+        <tr>
+            <th>HSN</th>
+            <th class="num">Taxable</th>
+            {% if same_state %}
+            <th class="num">CGST %</th>
+            <th class="num">CGST</th>
+            <th class="num">SGST %</th>
+            <th class="num">SGST</th>
+            {% else %}
+            <th class="num">IGST %</th>
+            <th class="num">IGST</th>
+            {% endif %}
+            <th class="num">Total Tax</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for row in tax_rows %}
+        <tr>
+            <td data-label="HSN"><code class="dim">{{ row.hsn|default:"—" }}</code></td>
+            <td data-label="Taxable" class="num">{{ row.taxable }}</td>
+            {% if same_state %}
+            <td data-label="CGST %" class="num">{{ row.half_rate|floatformat:"-2" }}%</td>
+            <td data-label="CGST" class="num">{{ row.cgst }}</td>
+            <td data-label="SGST %" class="num">{{ row.half_rate|floatformat:"-2" }}%</td>
+            <td data-label="SGST" class="num">{{ row.sgst }}</td>
+            {% else %}
+            <td data-label="IGST %" class="num">{{ row.rate|floatformat:"-2" }}%</td>
+            <td data-label="IGST" class="num">{{ row.igst }}</td>
+            {% endif %}
+            <td data-label="Total Tax" class="num">{{ row.tax }}</td>
+        </tr>
+        {% endfor %}
+    </tbody>
+    <tfoot>
+        <tr>
+            <td><strong>Total</strong></td>
+            <td class="num"><strong>{{ order.total_net }}</strong></td>
+            {% comment %}The rate columns have nothing to total. hide-sm drops
+            these spacers on a phone, where the table stacks and an empty cell
+            would otherwise become a blank labelled row.{% endcomment %}
+            {% if same_state %}
+            <td class="hide-sm"></td>
+            <td class="num"><strong>{{ cgst }}</strong></td>
+            <td class="hide-sm"></td>
+            <td class="num"><strong>{{ sgst }}</strong></td>
+            {% else %}
+            <td class="hide-sm"></td>
+            <td class="num"><strong>{{ igst }}</strong></td>
+            {% endif %}
+            <td class="num"><strong>{{ order.total_gst }}</strong></td>
+        </tr>
+    </tfoot>
+</table>
+</div>

@@ -1,0 +1,118 @@
+﻿
+{% extends "mybase.html" %}
+{% load static %}
+
+{% block title %}Products{% endblock %}
+
+{% block page_path %}Products{% endblock %}
+
+{% block page_title %}All Products{% endblock %}
+
+
+{% block content %}
+
+
+<div class="page-head__actions">
+        <button class="btn btn--primary" type="button" data-modal-open="addProduct">
+        <ion-icon name="add-outline"></ion-icon> Add Product
+        </button>
+        </div>
+
+        </div>
+
+
+   <!---Add All  Products table -->
+
+   <!---data-live: the search box, the stock filter and the pager fetch just
+        the rows and swap them in, so nothing reloads. The filtering itself
+        still runs server side, so it covers every record and not just the
+        page on screen. Without JS this stays a plain GET form and plain
+        links, exactly as before. -->
+
+   <section class="panel" data-live data-live-url="{% url 'products:products' %}">
+                    <div class="toolbar">
+                        <form class="search" method="get" data-live-form action="{% url 'products:products' %}">
+                            <ion-icon name="search-outline"></ion-icon>
+                            <input type="search" name="q" value="{{ search }}" autocomplete="off"
+                                placeholder="Search products…" aria-label="Search products"
+                                aria-controls="productResults">
+                            <!---only for the no-JS path, so submitting the form keeps the
+                                 stock filter and the page size; with JS the script never
+                                 reads this form -->
+                            {% if status != 'all' %}<input type="hidden" name="status" value="{{ status }}">{% endif %}
+                            {% if show_all %}<input type="hidden" name="per_page" value="all">{% endif %}
+                        </form>
+
+                        {% include "products/_product_filters.html" %}
+
+                        <!---<details> so the dropdown needs no javascript -->
+                        <details class="export-menu">
+                            <summary class="btn btn--ghost btn--sm">
+                                <ion-icon name="download-outline"></ion-icon> Export
+                                <ion-icon name="chevron-down-outline"></ion-icon>
+                            </summary>
+                            <div class="menu__panel export-menu__panel">
+                                <a class="menu__item" href="{% url 'products:export' 'pdf' %}">
+                                    <ion-icon name="document-text-outline"></ion-icon> PDF
+                                </a>
+                                <a class="menu__item" href="{% url 'products:export' 'csv' %}">
+                                    <ion-icon name="document-outline"></ion-icon> CSV
+                                </a>
+                                <a class="menu__item" href="{% url 'products:export' 'excel' %}">
+                                    <ion-icon name="grid-outline"></ion-icon> Excel
+                                </a>
+                            </div>
+                        </details>
+                    </div>
+
+                    {% include "products/_product_table.html" %}
+                </section>
+
+
+<!---Add Product modal -->
+
+<div class="modal{% if form.errors %} is-open{% endif %}" id="addProduct" hidden>
+    <div class="modal__backdrop" data-modal-close></div>
+
+    <div class="modal__panel" role="dialog" aria-modal="true" aria-labelledby="addProductTitle">
+        <header class="modal__head">
+            <h2 id="addProductTitle">Add Product</h2>
+            <button class="icon-btn" type="button" data-modal-close aria-label="Close">
+                <ion-icon name="close-outline"></ion-icon>
+            </button>
+        </header>
+
+        <form method="post" enctype="multipart/form-data" novalidate
+              action="{% url 'products:products' %}">
+            {% csrf_token %}
+
+            <div class="modal__body">
+                {% if form.non_field_errors %}
+                <div class="form-alert">{{ form.non_field_errors }}</div>
+                {% endif %}
+
+                <div class="form-grid">
+                    {% for field in form %}
+                    <div class="field{% if field.name in 'desc' %} field--wide{% endif %}">
+                        <label for="{{ field.id_for_label }}">
+                            {{ field.label }}{% if field.field.required %} <span class="req">*</span>{% endif %}
+                        </label>
+                        {{ field }}
+                        {% if field.help_text %}<small class="hint">{{ field.help_text }}</small>{% endif %}
+                        {% if field.errors %}<small class="field-error">{{ field.errors|striptags }}</small>{% endif %}
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+
+            <footer class="modal__foot">
+                <button class="btn btn--ghost" type="button" data-modal-close>Cancel</button>
+                <button class="btn btn--primary" type="submit">
+                    <ion-icon name="save-outline"></ion-icon> Save Product
+                </button>
+            </footer>
+        </form>
+    </div>
+</div>
+
+{% endblock %}

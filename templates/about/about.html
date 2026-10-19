@@ -1,0 +1,44 @@
+{% extends "mybase.html" %}
+{% load static %}
+
+{% block title %}{% if about %}{{ about.title }}{% else %}About Us{% endif %}{% endblock %}
+
+{% block page_path %}About Us{% endblock %}
+
+{% block page_title %}{% if about %}{{ about.title }}{% else %}About Us{% endif %}{% endblock %}
+
+
+{% block content %}
+
+</div>
+
+{% if about %}
+<section class="panel">
+    <header class="about-hero">
+        {% if about.logo %}
+        <div class="about-hero__logo">
+            <img src="{{ about.logo.url }}" alt="{{ about.title }}">
+        </div>
+        {% endif %}
+        <div class="about-hero__text">
+            <h2>{{ about.title }}</h2>
+            <p class="muted">Last updated {{ about.updated_at|date:"j M Y" }}</p>
+        </div>
+    </header>
+
+    <!---written in the admin editor, so it is stored and shown as HTML -->
+    <article class="richtext about-body">
+        {{ about.description|safe }}
+    </article>
+</section>
+{% else %}
+<section class="panel">
+    <div class="empty">
+        <ion-icon name="information-circle-outline"></ion-icon>
+        <h3>Nothing here yet</h3>
+        <p>Add your company details in the admin to show them here.</p>
+    </div>
+</section>
+{% endif %}
+
+{% endblock %}

@@ -1,0 +1,101 @@
+{% extends "reports/_report_base.html" %}
+
+{% comment %}
+3. Top Order Records — the order book ranked by value, biggest first.
+{% endcomment %}
+
+{% block report %}
+
+<!---everything the filter changes, swapped in as one region -->
+<div id="reportResults" data-live-region>
+
+<div class="table-wrap table-wrap--tall">
+    <table class="table table--stack table--fixed">
+        <colgroup>
+            <col class="w-rank"><col class="w-orderno">
+            {% if is_manager %}<col class="w-dealer">{% endif %}
+            <col class="w-date"><col class="w-name"><col class="w-qty">
+            <col class="w-money">
+        </colgroup>
+        <thead>
+            <tr>
+                <th class="num">#</th>
+                <th>Order No</th>
+                {% if is_manager %}<th>Dealer</th>{% endif %}
+                <th class="hide-sm">Date</th>
+                <th class="hide-sm">Raised By</th>
+                <th class="num">Items</th>
+                <th class="num">Total</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for row in rows %}
+            <tr>
+                <!---the top three carry a medal tint; the rest are plain -->
+                <td data-label="#" class="num">
+                    {% if row.rank <= 3 %}
+                    <span class="rank rank--{{ row.rank }}">{{ row.rank }}</span>
+                    {% else %}
+                    <span class="muted">{{ row.rank }}</span>
+                    {% endif %}
+                </td>
+                <td data-label="Order No" class="cell-orderno">
+                    <a class="order-ref" href="{% url 'myorder:edit' row.order.pk %}"
+                       title="View order {{ row.order.order_no }}">
+                        <code class="dim">{{ row.order.order_no }}</code>
+                        <ion-icon name="eye-outline" aria-hidden="true"></ion-icon>
+                    </a>
+                </td>
+                {% if is_manager %}<td data-label="Dealer">{{ row.order.dealer.name }}</td>{% endif %}
+                <td data-label="Date" class="hide-sm cell-date">{{ row.order.ordered_on|date:"j M Y" }}</td>
+                <!---display only: tells a salesman's order from one the dealer placed -->
+                <td data-label="Raised By" class="hide-sm">
+                    {% if row.order.is_direct %}
+                    <span class="muted">Dealer</span>
+                    {% else %}
+                    {{ row.order.sales_executive.name }}
+                    {% endif %}
+                </td>
+                <td data-label="Items" class="num">{{ row.order.total_qty }}</td>
+                <td data-label="Total" class="num"><strong>{{ row.order.total_amount }}</strong></td>
+            </tr>
+            {% endfor %}
+        </tbody>
+
+        {% if rows %}
+        <tfoot>
+            <tr>
+                <td{% if is_manager %} colspan="3"{% else %} colspan="2"{% endif %}><strong>Total</strong></td>
+                <td class="hide-sm"></td>
+                <td class="hide-sm"></td>
+                <td class="num"><strong>{{ totals.qty }}</strong></td>
+                <td class="num"><strong>{{ totals.total }}</strong></td>
+            </tr>
+        </tfoot>
+        {% endif %}
+    </table>
+</div>
+
+{% if not rows %}
+<div class="empty">
+    <ion-icon name="trending-up-outline"></ion-icon>
+    <h3>No orders to rank</h3>
+</div>
+{% endif %}
+
+<div class="panel__foot">
+    <div class="pagination">
+        <span class="muted">
+            <strong>{{ page.paginator.count }}</strong> order{{ page.paginator.count|pluralize }}, largest first
+            <!---net and GST left the table; their totals stay here -->
+            &middot; net <strong>{{ totals.net }}</strong>
+            &middot; GST <strong>{{ totals.gst }}</strong>
+            &middot; {{ label }}
+        </span>
+        {% include "_pagination.html" %}
+    </div>
+</div>
+
+</div><!--- /#reportResults -->
+
+{% endblock %}

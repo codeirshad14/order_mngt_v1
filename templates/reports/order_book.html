@@ -1,0 +1,101 @@
+{% extends "reports/_report_base.html" %}
+
+{% comment %}
+1. Order Book — every placed order, in the same columns as the order table.
+{% endcomment %}
+
+{% block report %}
+
+<!---everything the filter changes, swapped in as one region -->
+<div id="reportResults" data-live-region>
+
+<div class="table-wrap table-wrap--tall">
+    <table class="table table--stack table--fixed">
+        <colgroup>
+            <col class="w-orderno">
+            {% if is_manager %}<col class="w-dealer">{% endif %}
+            <col class="w-date"><col class="w-name"><col class="w-qty">
+            <col class="w-money">
+            <col class="w-status">
+        </colgroup>
+        <thead>
+            <tr>
+                <th>Order No</th>
+                {% if is_manager %}<th>Dealer</th>{% endif %}
+                <th class="hide-sm">Date</th>
+                <th class="hide-sm">Raised By</th>
+                <th class="num">Items</th>
+                <th class="num">Total</th>
+                <th>Status</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for o in orders %}
+            <tr>
+                <td data-label="Order No" class="cell-orderno">
+                    <a class="order-ref" href="{% url 'myorder:edit' o.pk %}"
+                       title="View order {{ o.order_no }}">
+                        <code class="dim">{{ o.order_no }}</code>
+                        <ion-icon name="eye-outline" aria-hidden="true"></ion-icon>
+                    </a>
+                </td>
+                {% if is_manager %}<td data-label="Dealer">{{ o.dealer.name }}</td>{% endif %}
+                <td data-label="Date" class="hide-sm cell-date">{{ o.ordered_on|date:"j M Y" }}</td>
+                <!---display only: tells a salesman's order from one the dealer placed -->
+                <td data-label="Raised By" class="hide-sm">
+                    {% if o.is_direct %}
+                    <span class="muted">Dealer</span>
+                    {% else %}
+                    {{ o.sales_executive.name }}
+                    {% endif %}
+                </td>
+                <td data-label="Items" class="num">{{ o.total_qty }}</td>
+                <td data-label="Total" class="num"><strong>{{ o.total_amount }}</strong></td>
+                <td data-label="Status">
+                    <span class="badge badge--{% if o.is_draft %}warning{% elif o.is_hold %}info{% else %}success{% endif %}">
+                        {{ o.get_status_display }}
+                    </span>
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+
+        {% if orders %}
+        <tfoot>
+            <tr>
+                <td{% if is_manager %} colspan="2"{% endif %}><strong>Total</strong></td>
+                <td class="hide-sm"></td>
+                <td class="hide-sm"></td>
+                <td class="num"><strong>{{ totals.qty }}</strong></td>
+                <td class="num"><strong>{{ totals.total }}</strong></td>
+                <td></td>
+            </tr>
+        </tfoot>
+        {% endif %}
+    </table>
+</div>
+
+{% if not orders %}
+<div class="empty">
+    <ion-icon name="book-outline"></ion-icon>
+    <h3>No orders in this period</h3>
+</div>
+{% endif %}
+
+<div class="panel__foot">
+    <div class="pagination">
+        <span class="muted">
+            Showing <strong>{{ page.paginator.count }}</strong> order{{ page.paginator.count|pluralize }}
+            <!---net and GST are no longer columns; their totals are given here
+                 so the page still carries them without the extra width -->
+            &middot; net <strong>{{ totals.net }}</strong>
+            &middot; GST <strong>{{ totals.gst }}</strong>
+            &middot; {{ label }}
+        </span>
+        {% include "_pagination.html" %}
+    </div>
+</div>
+
+</div><!--- /#reportResults -->
+
+{% endblock %}

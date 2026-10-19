@@ -1,0 +1,540 @@
+/* ============================================================================
+   Admin tweaks on top of jazzmin / AdminLTE.
+   Mostly about surviving narrow screens — the stock admin tables and Django's
+   fieldset rows are built for a desktop and overflow badly on a phone.
+   ========================================================================== */
+
+/* ------------------------------------------------- product image gallery */
+.om-gallery {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 12px;
+}
+
+.om-gallery figure {
+    margin: 0;
+    text-align: center;
+    flex: 0 1 auto;
+}
+
+.om-gallery img {
+    width: clamp(84px, 22vw, 120px);
+    height: clamp(84px, 22vw, 120px);
+    object-fit: cover;
+    border-radius: 8px;
+    border: 1px solid rgba(128, 128, 128, .35);
+    background: rgba(128, 128, 128, .08);
+    display: block;
+}
+
+.om-gallery figcaption {
+    font-size: 11px;
+    opacity: .7;
+    margin-top: 4px;
+}
+
+.om-thumb {
+    width: 44px;
+    height: 44px;
+    object-fit: cover;
+    border-radius: 6px;
+    max-width: none;
+}
+
+.om-money td {
+    padding: 2px 14px 2px 0;
+    white-space: nowrap;
+}
+
+/* ------------------------------------------------------------- overflow */
+/* Long values (image paths, part numbers) must not stretch the page.
+   (#content-main is AdminLTE 4's wrapper; the old .content-wrapper is
+   AdminLTE 3 and does not exist in jazzmin 3.x.) */
+#content-main {
+    min-width: 0;
+}
+
+.form-row,
+.field-box {
+    min-width: 0;
+}
+
+#result_list {
+    width: 100%;
+}
+
+/* file inputs are a classic source of horizontal overflow */
+input[type="file"] {
+    max-width: 100%;
+}
+
+/* ------------------------------------------------------------- phones */
+@media (max-width: 768px) {
+
+    /* the change-form label column is a fixed width in the stock admin,
+       which squeezes the input to nothing on a narrow screen */
+    .form-group label,
+    .form-row label {
+        width: auto !important;
+        float: none !important;
+        text-align: left !important;
+        margin-bottom: 4px;
+    }
+
+    .form-group .col-sm-10,
+    .form-group .col-sm-2 {
+        width: 100%;
+        max-width: 100%;
+        flex: 0 0 100%;
+    }
+
+    /* tabs wrap instead of scrolling off the edge */
+    .nav-tabs {
+        flex-wrap: wrap;
+    }
+
+    /* the submit bar sticks to the bottom so you never hunt for Save */
+    .submit-row {
+        position: sticky;
+        bottom: 0;
+        z-index: 5;
+        display: flex;
+        flex-wrap: wrap;
+        gap: 6px;
+        padding: 8px;
+        background: var(--bs-body-bg, #fff);
+        border-top: 1px solid rgba(128, 128, 128, .3);
+    }
+
+    .submit-row input,
+    .submit-row a {
+        flex: 1 1 auto;
+    }
+
+    /* filter sidebar drops below the results rather than crushing them */
+    #changelist-filter {
+        width: 100% !important;
+        float: none !important;
+        margin-top: 12px;
+    }
+}
+
+
+/* =================== horizontal filter (product picker) ====================
+   jazzmin replaces Django's admin CSS and does not ship widgets.css, so the
+   two-pane selector that SelectFilter2.js builds arrives with no styling at
+   all. These rules restore it, themed to match AdminLTE.
+   Markup: .selector > .selector-available + .selector-chooser + .selector-chosen
+   ========================================================================== */
+.selector {
+    display: flex;
+    align-items: stretch;
+    gap: 12px;
+    width: 100%;
+    flex-wrap: nowrap;
+}
+
+.selector-available,
+.selector-chosen {
+    flex: 1 1 0;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    border: 1px solid rgba(128, 128, 128, .35);
+    border-radius: 6px;
+    overflow: hidden;
+    background: var(--bs-body-bg, #fff);
+}
+
+/* the pane heading is a div holding a <label> and a <p class="helptext"> */
+.selector-available-title,
+.selector-chosen-title {
+    padding: 8px 10px;
+    background: rgba(128, 128, 128, .12);
+    border-bottom: 1px solid rgba(128, 128, 128, .3);
+}
+
+.selector-available-title label,
+.selector-chosen-title label {
+    margin: 0;
+    font-size: 13px;
+    font-weight: 600;
+}
+
+.selector-available-title .helptext,
+.selector-chosen-title .helptext {
+    margin: 2px 0 0;
+    font-size: 11px;
+    opacity: .7;
+}
+
+/* the search box above the left pane */
+.selector .selector-filter {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    margin: 0;
+    padding: 6px 8px;
+    border-bottom: 1px solid rgba(128, 128, 128, .25);
+}
+
+.selector .selector-filter label {
+    margin: 0;
+    display: flex;
+    align-items: center;
+}
+
+.selector .selector-filter input[type="text"] {
+    flex: 1 1 auto;
+    width: 100%;
+    min-height: 30px;
+    padding: 4px 8px;
+    border: 1px solid rgba(128, 128, 128, .4);
+    border-radius: 4px;
+    background: var(--bs-body-bg, #fff);
+    color: inherit;
+}
+
+/* the two list boxes */
+.selector select.filtered {
+    width: 100%;
+    height: 260px;
+    border: 0;
+    border-radius: 0;
+    padding: 0;
+    background: transparent;
+    color: inherit;
+}
+
+.selector select.filtered option {
+    padding: 5px 10px;
+    border-bottom: 1px solid rgba(128, 128, 128, .12);
+}
+
+/* "Choose all" / "Remove all" — <button> elements at the foot of each pane */
+.selector .selector-chooseall,
+.selector .selector-clearall {
+    display: block;
+    width: 100%;
+    padding: 7px 10px;
+    font-size: 12px;
+    text-align: center;
+    color: inherit;
+    border: 0;
+    border-top: 1px solid rgba(128, 128, 128, .3);
+    background: rgba(128, 128, 128, .08);
+    cursor: pointer;
+}
+
+.selector .selector-chooseall:hover,
+.selector .selector-clearall:hover {
+    background: rgba(128, 128, 128, .2);
+}
+
+/* the arrow buttons between the panes */
+.selector-chooser {
+    flex: 0 0 auto;
+    align-self: center;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+}
+
+.selector-chooser li {
+    margin: 0;
+}
+
+/* these are <button>s whose only content is a long label such as
+   "Choose selected products" — font-size:0 hides that text, and the arrow
+   comes back through ::after at its own size */
+.selector-chooser button {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 36px;
+    height: 36px;
+    padding: 0;
+    font-size: 0;
+    color: inherit;
+    border: 1px solid rgba(128, 128, 128, .4);
+    border-radius: 6px;
+    background: rgba(128, 128, 128, .1);
+    cursor: pointer;
+}
+
+.selector-chooser button:hover {
+    background: rgba(128, 128, 128, .25);
+}
+
+.selector-chooser button::after {
+    font-size: 20px;
+    line-height: 1;
+}
+
+.selector-add::after {
+    content: "\203A";
+}
+
+.selector-remove::after {
+    content: "\2039";
+}
+
+/* help text under the widget */
+.selector + .help,
+.form-row .help.selector-help {
+    display: block;
+    margin-top: 6px;
+    font-size: 12px;
+    opacity: .75;
+}
+
+/* stack the panes on a narrow screen — side by side is unusable there */
+@media (max-width: 991px) {
+    .selector {
+        flex-wrap: wrap;
+    }
+
+    .selector-available,
+    .selector-chosen {
+        flex: 1 1 100%;
+    }
+
+    /* arrows point up/down when the panes are stacked */
+    .selector-chooser {
+        flex-direction: row;
+        align-self: center;
+    }
+
+    .selector-add::after {
+        content: "\2304";
+    }
+
+    .selector-remove::after {
+        content: "\2303";
+    }
+
+    .selector select.filtered {
+        height: 200px;
+    }
+}
+
+
+/* ----------------- give the product picker the full card width -------------
+   jazzmin lays each field out as a Bootstrap row: a col-sm-3 label beside a
+   col-sm-9 field slot. That is fine for an input, but it squeezes the
+   two-pane selector into 75% of an already-narrow tab. Stack the label above
+   the widget and let the widget span the card. */
+.form-group.field-products > .row {
+    flex-direction: column;
+}
+
+.form-group.field-products > .row > label {
+    flex: 0 0 100%;
+    width: 100%;
+    max-width: 100%;
+    text-align: left !important;
+    margin-bottom: 6px;
+}
+
+.form-group.field-products > .row > div[class*="col-"] {
+    flex: 0 0 100%;
+    width: 100%;
+    max-width: 100%;
+}
+
+.field-products .related-widget-wrapper {
+    width: 100%;
+}
+
+/* the "Add another product" link that follows the widget */
+.field-products .related-widget-wrapper > a {
+    display: inline-block;
+    margin-top: 8px;
+}
+
+/* the widget is built by JS while its tab is still display:none, so never
+   let it rely on the pane being visible to get a height */
+.tab-pane .selector select.filtered {
+    height: 260px;
+}
+
+
+/* ===================== sidebar column width (AdminLTE 4) ===================
+   .app-wrapper is a CSS grid: "grid-template-columns: auto 1fr", where the
+   auto column is the sidebar. AdminLTE only pins the sidebar's width in its
+   collapsed states, so when expanded the column grows to fit its widest
+   child — a long label such as "Authentication and Authorization" stretches
+   it and pushes the header and content far to the right.
+   Pin the expanded width and let long labels wrap instead.
+   The .sidebar-mini.sidebar-collapse rules are more specific, so the
+   collapsed and hover-expand behaviour is untouched.
+   ========================================================================== */
+.app-wrapper > .app-sidebar {
+    width: var(--lte-sidebar-width, 250px);
+    min-width: var(--lte-sidebar-width, 250px);
+    max-width: var(--lte-sidebar-width, 250px);
+}
+
+/* a long menu or section label wraps rather than widening the column */
+.app-sidebar .nav-header,
+.app-sidebar .nav-link > p,
+.app-sidebar .brand-text {
+    overflow-wrap: anywhere;
+    white-space: normal;
+}
+
+/* keep the grid honest even if a child tries to overflow */
+.app-wrapper > .app-main,
+.app-wrapper > .app-header {
+    min-width: 0;
+}
+
+.app-content,
+.app-content-header {
+    overflow-x: auto;
+}
+
+
+/* ==================== tabular inlines (order items) ======================
+   jazzmin renders an inline as <table class="table text-nowrap"> with no
+   scrolling wrapper, so a row of selects and readonly values runs off the
+   right of the card. These rules make it fit, and scroll when it cannot. */
+.inline-group {
+    max-width: 100%;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+}
+
+.inline-group > .tabular > fieldset > table,
+.inline-group table.table {
+    width: 100%;
+    margin-bottom: 0;
+}
+
+/* the name column may wrap; numbers stay on one line */
+.inline-group table.text-nowrap th,
+.inline-group table.text-nowrap td {
+    white-space: normal;
+    vertical-align: middle;
+    padding: 6px 8px;
+}
+
+.inline-group td.field-qty,
+.inline-group td.field-rate,
+.inline-group td.field-gst,
+.inline-group td.field-line_total,
+.inline-group th.column-qty,
+.inline-group th.column-rate,
+.inline-group th.column-gst {
+    white-space: nowrap;
+}
+
+/* the leading column only carries hidden inputs — give it no width */
+.inline-group td.original,
+.inline-group th.original {
+    width: 1px;
+    padding-left: 4px;
+    padding-right: 4px;
+}
+
+.inline-group td.original p {
+    margin: 0;
+    font-size: 11px;
+    white-space: nowrap;
+}
+
+/* selects and inputs inside a row should not each demand a fixed width */
+.inline-group td .related-widget-wrapper,
+.inline-group td select,
+.inline-group td input[type="text"],
+.inline-group td input[type="number"] {
+    max-width: 100%;
+    min-width: 0;
+}
+
+.inline-group td .select2-container {
+    min-width: 180px;
+    max-width: 100%;
+}
+
+/* readonly values read as text, not as empty form controls */
+.inline-group td .readonly,
+.form-group .readonly {
+    padding: 4px 0;
+    opacity: .85;
+}
+
+/* the delete checkbox column */
+.inline-group td.delete,
+.inline-group th:last-child {
+    width: 1px;
+    text-align: center;
+    white-space: nowrap;
+}
+
+/* "Add another" link under the inline */
+.inline-group .add-row a,
+.inline-group .djn-add-item a {
+    display: inline-block;
+    margin-top: 8px;
+}
+
+/* ==================== change-form field rows ============================= */
+/* keep a wide readonly block (image gallery, totals table) from bursting the
+   9-column slot jazzmin puts every field in */
+.form-group .readonly,
+.form-group .related-widget-wrapper {
+    max-width: 100%;
+    overflow-x: auto;
+}
+
+/* file inputs: the "Currently / Change" line wraps instead of overflowing */
+.form-group .file-upload,
+.form-group p.file-upload {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 6px;
+    margin: 0;
+    word-break: break-all;
+}
+
+.form-group input[type="file"] {
+    max-width: 100%;
+}
+
+/* select2 (autocomplete) should fill its slot rather than sit at 0 width */
+.form-group .select2-container {
+    width: 100% !important;
+    max-width: 420px;
+}
+
+
+/* ---- jazzmin theme-preview drawer -------------------------------------
+   Belt and braces: if show_ui_builder is ever switched back on, this keeps
+   the panel off the page instead of letting it render as a block after the
+   footer. .control-sidebar is AdminLTE 3 markup that AdminLTE 4 no longer
+   positions, which is what made it spill into the layout. */
+.control-sidebar.ui-customiser {
+    position: fixed;
+    top: 0;
+    right: 0;
+    bottom: 0;
+    width: 320px;
+    max-width: 90vw;
+    overflow-y: auto;
+    z-index: 1200;
+    background: #2b3440;
+    color: #e5e7eb;
+    box-shadow: -4px 0 18px rgba(0, 0, 0, .35);
+    transform: translateX(100%);
+    transition: transform .2s ease;
+}
+
+.control-sidebar.ui-customiser.control-sidebar-open,
+body.control-sidebar-slide-open .control-sidebar.ui-customiser {
+    transform: translateX(0);
+}

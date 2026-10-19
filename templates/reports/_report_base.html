@@ -1,0 +1,46 @@
+{% extends "mybase.html" %}
+{% load static %}
+
+{% comment %}
+The shell every report page shares: heading, the filter bar and a panel to
+put the table in. A report template extends this and fills the report block
+with its own table — nothing else.
+
+That way all eight look and behave identically, and the format only ever has
+to change in one file.
+
+No page_sub block: the heading is the report's name and that is all it needs.
+{% endcomment %}
+
+{% block title %}{{ card.name }}{% endblock %}
+
+{% block page_path %}Reports{% endblock %}
+
+{% block page_title %}{{ card.name }}{% endblock %}
+
+
+{% block content %}
+
+<div class="page-head__actions">
+    <a class="btn btn--ghost" href="{% url 'reports:reports' %}">
+        <ion-icon name="grid-outline"></ion-icon> All Reports
+    </a>
+</div>
+
+</div>
+
+
+<!---data-live: the search box, the period segment and the date form fetch
+     the report again and swap the results in, so filtering never reloads the
+     page. The filtering still runs server side, so it covers every record.
+     Without JS these stay plain GET forms and plain links. -->
+
+<section class="panel" data-live data-live-url="{% url card.url %}">
+    {% include "reports/_toolbar.html" %}
+
+    {% block report %}{% endblock %}
+</section>
+
+{% block report_extra %}{% endblock %}
+
+{% endblock %}

@@ -1,0 +1,139 @@
+{% comment %}
+The product rows, the empty state and the pagination — everything the search
+and the stock filter change. Rendered inside the page on a normal visit, and
+on its own when the search box asks for a filtered set.
+{% endcomment %}
+
+<div id="productResults" data-live-region>
+    <div class="table-wrap table-wrap--tall">
+        <table class="table table--stack" id="productsTable">
+            <thead>
+                <tr>
+                    <th class="num hide-sm cell-no">#</th>
+                    <th class="cell-media">Image</th>
+                    <th>Name</th>
+                    <th class="hide-sm">Part No</th>
+                    <th class="hide-sm">Brand</th>
+                    <th class="hide-sm">Unit</th>
+                    <th class="num">Price</th>
+                    <th class="num">Stock</th>
+                    <th>Status</th>
+                    <th class="actions">Details</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for p in products %}
+                <tr data-status="{{ p.stock_status }}">
+                    <!---keeps counting across pages: 101, 102 … not 1, 2 again -->
+                    <td data-label="#" class="num hide-sm muted cell-no">
+                        {{ forloop.counter0|add:page.start_index }}
+                    </td>
+                    <td data-label="Image" class="cell-media">
+                        <a href="{% url 'products:detail' p.pk %}">
+                            <img class="cell-img" src="{{ p.front_url }}" alt="{{ p.name }}" loading="lazy">
+                        </a>
+                    </td>
+                    <td data-label="Name">
+                        <div class="cell-user">
+                            <div>
+                                <a href="{% url 'products:detail' p.pk %}"><strong>{{ p.name }}</strong></a>
+                                <small>{{ p.desc }}</small>
+                            </div>
+                        </div>
+                    </td>
+                    <td data-label="Part No" class="hide-sm"><code class="dim">{{ p.partno }}</code></td>
+                    <td data-label="Brand" class="hide-sm">{{ p.brand }}</td>
+                    <td data-label="Unit" class="hide-sm">{{ p.unit }}</td>
+                    <td data-label="Price" class="num">{{ p.price }}</td>
+                    <td data-label="Stock" class="num">{{ p.stock }}</td>
+                    <td data-label="Status"><span class="badge badge--{{ p.stock_badge }}">{{ p.stock_label }}</span></td>
+                    <td data-label="Details" class="actions">
+                        <div class="row-actions">
+                            {% if p.stock > 0 %}
+                            <!---posts through fetch, so the list does not reload -->
+                            <form method="post" data-add-form
+                                  action="{% url 'myorder:add_to_cart' p.pk %}">
+                                {% csrf_token %}
+                                <input type="hidden" name="qty" value="1">
+                                <button class="icon-btn icon-btn--cart" type="submit"
+                                        title="Add to cart" aria-label="Add {{ p.name }} to cart">
+                                    <ion-icon name="cart-outline"></ion-icon>
+                                </button>
+                            </form>
+                            {% else %}
+                            <button class="icon-btn icon-btn--cart" type="button" disabled
+                                    title="Out of stock" aria-label="{{ p.name }} is out of stock">
+                                <ion-icon name="cart-outline"></ion-icon>
+                            </button>
+                            {% endif %}
+
+                            <a class="icon-btn icon-btn--view" href="{% url 'products:detail' p.pk %}"
+                               title="View details" aria-label="View {{ p.name }}">
+                                <ion-icon name="eye-outline"></ion-icon>
+                            </a>
+                        </div>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+
+    {% if not page.object_list %}
+    <div class="empty">
+        <ion-icon name="cube-outline"></ion-icon>
+        <h3>No products found</h3>
+        <p>
+            {% if search %}Nothing matches &ldquo;{{ search|truncatechars:30 }}&rdquo;. Check the
+            spelling, try a part number, or search for fewer words.{% else %}Nothing matches that
+            filter. Try another stock state.{% endif %}
+        </p>
+    </div>
+    {% endif %}
+
+    <div class="panel__foot">
+        <div class="pagination">
+            <span class="muted">
+                Showing <strong>{{ page.start_index }}–{{ page.end_index }}</strong>
+                of <strong>{{ page.paginator.count }}</strong>
+                product{{ page.paginator.count|pluralize }}
+            </span>
+
+            <!---page size: 100 at a time, or everything at once -->
+            <div class="segment segment--sm" role="group" aria-label="Page size">
+                <a class="{% if not show_all %}is-active{% endif %}"
+                   href="?{% if base_query %}{{ base_query }}{% endif %}">100 / page</a>
+                <a class="{% if show_all %}is-active{% endif %}"
+                   href="?per_page=all{% if base_query %}&{{ base_query }}{% endif %}">Show all</a>
+            </div>
+
+            {% if page.paginator.num_pages > 1 %}
+            <div class="pagination__pages">
+                {% if page.has_previous %}
+                <a href="?page={{ page.previous_page_number }}{% if querystring %}&{{ querystring }}{% endif %}"
+                   aria-label="Previous page"><ion-icon name="chevron-back-outline"></ion-icon></a>
+                {% else %}
+                <button disabled aria-label="Previous page"><ion-icon name="chevron-back-outline"></ion-icon></button>
+                {% endif %}
+
+                {% for num in page_range %}
+                    {% if num == page.paginator.ELLIPSIS %}
+                    <button disabled>{{ num }}</button>
+                    {% elif num == page.number %}
+                    <button class="is-active" aria-current="page">{{ num }}</button>
+                    {% else %}
+                    <a href="?page={{ num }}{% if querystring %}&{{ querystring }}{% endif %}">{{ num }}</a>
+                    {% endif %}
+                {% endfor %}
+
+                {% if page.has_next %}
+                <a href="?page={{ page.next_page_number }}{% if querystring %}&{{ querystring }}{% endif %}"
+                   aria-label="Next page"><ion-icon name="chevron-forward-outline"></ion-icon></a>
+                {% else %}
+                <button disabled aria-label="Next page"><ion-icon name="chevron-forward-outline"></ion-icon></button>
+                {% endif %}
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>

@@ -1,0 +1,90 @@
+{% extends "reports/_report_base.html" %}
+
+{% comment %}
+9. Sales Executive Performance — each salesman's book for the period,
+   ranked by what they brought in. Share is their slice of the total.
+{% endcomment %}
+
+{% block report %}
+
+<!---everything the filter changes, swapped in as one region -->
+<div id="reportResults" data-live-region>
+
+<div class="table-wrap table-wrap--tall">
+    <table class="table table--stack table--fixed">
+        <colgroup>
+            <col class="w-rank">
+            <col class="w-name">
+            <col class="w-qty">
+            <col class="w-qty">
+            <col class="w-qty">
+            <col class="w-money">
+            <col class="w-money">
+        </colgroup>
+        <thead>
+            <tr>
+                <th class="num">#</th>
+                <th>Sales Executive</th>
+                <th class="num">Orders</th>
+                <th class="num">Dealers</th>
+                <th class="num">Qty</th>
+                <th class="num hide-sm">Avg Order</th>
+                <th class="num">Total</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for row in rows %}
+            <tr>
+                <td data-label="#" class="num">{% if row.rank <= 3 %}<span class="rank rank--{{ row.rank }}">{{ row.rank }}</span>{% else %}<span class="muted">{{ row.rank }}</span>{% endif %}</td>
+                <!---step one of the drill-down: this executive's dealers -->
+                <td data-label="Sales Executive">
+                    <a class="drill" href="{% url 'reports:sales_dealers' %}?{{ row.drill }}"
+                       title="Show the dealers {{ row.name }} sells to">
+                        <strong>{{ row.name }}</strong>
+                        <small class="muted">{{ row.code }}</small>
+                        <ion-icon name="chevron-forward-outline" aria-hidden="true"></ion-icon>
+                    </a>
+                </td>
+                <td data-label="Orders" class="num">{{ row.orders }}</td>
+                <td data-label="Dealers" class="num">{{ row.dealers }}</td>
+                <td data-label="Qty" class="num">{{ row.qty }}</td>
+                <td data-label="Avg Order" class="num hide-sm">{{ row.avg_order }}</td>
+                <td data-label="Total" class="num"><strong>{{ row.total }}</strong>
+                    <small class="muted">{{ row.share }}% of period</small></td>
+            </tr>
+            {% endfor %}
+        </tbody>
+
+        {% if rows %}
+        <tfoot>
+            <tr>
+                <td><strong>Total</strong></td>
+                <td></td>
+                <td class="num"><strong>{{ totals.orders }}</strong></td>
+                <td class="num"></td>
+                <td class="num"><strong>{{ totals.qty }}</strong></td>
+                <td class="hide-sm"></td>
+                <td class="num"><strong>{{ totals.total }}</strong></td>
+            </tr>
+        </tfoot>
+        {% endif %}
+    </table>
+</div>
+
+{% if not rows %}
+<div class="empty">
+    <ion-icon name="podium-outline"></ion-icon>
+    <h3>No sales in this period</h3>
+</div>
+{% endif %}
+
+<div class="panel__foot">
+    <div class="pagination">
+        <span class="muted"><strong>{{ page.paginator.count }}</strong> executive{{ page.paginator.count|pluralize }} &middot; <strong>{{ totals.orders }}</strong> order{{ totals.orders|pluralize }} &middot; net <strong>{{ totals.net }}</strong> &middot; GST <strong>{{ totals.gst }}</strong> &middot; {{ label }}</span>
+        {% include "_pagination.html" %}
+    </div>
+</div>
+
+</div><!--- /#reportResults -->
+
+{% endblock %}
