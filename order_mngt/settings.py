@@ -152,14 +152,33 @@ USE_TZ = True
 # Static files (CSS, JavaScript, Images)
 # https://docs.djangoproject.com/en/6.0/howto/static-files/
 
-STATIC_URL = 'static/'
+#STATIC_URL = 'static/'
 
-STATICFILES_DIRS = [BASE_DIR / "static"]
+#STATICFILES_DIRS = [BASE_DIR / "static"]
 
 # Uploaded files (product images)
 
-MEDIA_URL = 'media/'
+#MEDIA_URL = 'media/'
 
+#MEDIA_ROOT = BASE_DIR / 'media'
+
+
+
+
+#STATIC_URL = 'static/'
+
+#STATICFILES_DIRS = [BASE_DIR / "static"]
+
+# Uploaded files (company logo and signature). Not served at a public URL:
+# the company:image view hands them out to the company's own logins only.
+#MEDIA_ROOT = BASE_DIR / "media"
+
+STATIC_URL = 'static/'
+STATICFILES_DIRS = [BASE_DIR / "static"]   # only if you have a static/ folder
+STATIC_ROOT = BASE_DIR / "staticfiles"
+
+
+MEDIA_URL = '/media/'
 MEDIA_ROOT = BASE_DIR / 'media'
 
 # @login_required sends people to LOGIN_URL; the other two say where to land

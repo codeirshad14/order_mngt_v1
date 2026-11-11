@@ -1,0 +1,630 @@
+/* ==========================================================================
+   The public one-page site.
+
+   Layout only. Every colour, radius, shadow and spacing step comes from the
+   variables style.css already defines, so the site matches the dashboard in
+   both light and dark mode without repeating a single hex value.
+   ========================================================================== */
+
+.web {
+  background: var(--bg);
+  color: var(--text);
+  /* the app is a fixed shell; this page scrolls */
+  overflow-x: hidden;
+}
+
+/* The navbar's height, in one place. scroll-padding-top must match it or a
+   jump link lands with the section heading hidden behind the bar. */
+:root {
+  --web-nav-h: 68px;
+}
+
+html {
+  scroll-behavior: smooth;
+  scroll-padding-top: var(--web-nav-h);
+}
+
+.web-wrap {
+  width: 100%;
+  max-width: 1160px;
+  margin: 0 auto;
+  padding: 0 var(--gutter);
+}
+
+/* ------------------------------------------------------------- navbar */
+.web-nav {
+  position: sticky;
+  top: 0;
+  z-index: 600;
+  background: var(--surface);
+  background: color-mix(in srgb, var(--surface) 86%, transparent);
+  backdrop-filter: blur(14px);
+  border-bottom: 1px solid var(--border);
+}
+
+.web-nav__inner {
+  display: flex;
+  align-items: center;
+  gap: var(--s-4);
+  min-height: var(--web-nav-h);
+}
+
+/* ---- logo, top left ---- */
+.web-brand {
+  display: flex;
+  align-items: center;
+  gap: var(--s-3);
+  color: var(--text);
+  text-decoration: none;
+  flex: 0 0 auto;
+}
+
+.web-brand__logo {
+  height: 40px;
+  width: auto;
+  max-width: 160px;
+  object-fit: contain;
+}
+
+/* shown only when no logo has been uploaded */
+.web-brand__mark {
+  display: grid;
+  place-items: center;
+  width: 40px;
+  height: 40px;
+  border-radius: var(--r-md);
+  background: var(--primary-600);
+  color: #fff;
+  font-size: 1.3rem;
+}
+
+.web-brand__name {
+  font-size: var(--fs-lg, 1.05rem);
+  font-weight: 700;
+  letter-spacing: -0.01em;
+  white-space: nowrap;
+}
+
+/* ---- the menu ---- */
+.web-menu {
+  display: flex;
+  align-items: center;
+  gap: var(--s-1);
+  margin-left: auto;
+}
+
+.web-menu a {
+  padding: var(--s-2) var(--s-3);
+  border-radius: var(--r-md);
+  font-size: var(--fs-md);
+  font-weight: 600;
+  color: var(--text-2);
+  text-decoration: none;
+  white-space: nowrap;
+  transition: color var(--t-fast), background-color var(--t-fast);
+}
+.web-menu a:hover {
+  color: var(--text);
+  background: var(--surface-3);
+}
+
+.web-nav__actions {
+  display: flex;
+  align-items: center;
+  gap: var(--s-2);
+  flex: 0 0 auto;
+}
+
+/* the burger only exists on a phone */
+.web-burger {
+  display: none;
+}
+
+/* ---------------------------------------------------------------- hero */
+.web-hero {
+  padding: clamp(var(--s-8), 7vw, 96px) 0;
+  background:
+    radial-gradient(60% 120% at 80% 0%,
+      color-mix(in srgb, var(--primary-500) 14%, transparent), transparent 70%),
+    var(--bg);
+}
+
+.web-hero__inner {
+  display: grid;
+  grid-template-columns: minmax(0, 1.4fr) minmax(0, 1fr);
+  gap: clamp(var(--s-5), 5vw, 64px);
+  align-items: center;
+}
+
+.web-hero h1 {
+  margin: var(--s-4) 0 var(--s-4);
+  font-size: clamp(2rem, 5vw, 3.2rem);
+  line-height: 1.1;
+  letter-spacing: -0.02em;
+}
+/* the second line, quieter than the first */
+.web-hero h1 span {
+  display: block;
+  color: var(--text-2);
+  font-weight: 600;
+}
+
+.web-hero__text > p {
+  max-width: 56ch;
+  margin: 0;
+  font-size: var(--fs-lg, 1.05rem);
+  line-height: 1.65;
+  color: var(--text-2);
+}
+
+.web-hero__cta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--s-3);
+  margin-top: var(--s-6);
+}
+
+.web-hero__hours {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: var(--s-5) !important;
+  font-size: var(--fs-sm);
+  color: var(--text-3);
+}
+
+/* ---- the three numbers ---- */
+.web-stats {
+  display: grid;
+  gap: var(--s-3);
+}
+
+.web-stat {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--s-4);
+  padding: var(--s-4) var(--s-5);
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--r-lg);
+  box-shadow: var(--shadow-sm);
+}
+.web-stat strong {
+  font-size: 1.9rem;
+  line-height: 1;
+  color: var(--primary-600);
+  font-variant-numeric: tabular-nums;
+}
+.web-stat span {
+  font-size: var(--fs-sm);
+  font-weight: 600;
+  color: var(--text-3);
+  text-transform: uppercase;
+  letter-spacing: 0.07em;
+}
+
+/* ------------------------------------------------------------ sections */
+.web-section {
+  padding: clamp(var(--s-8), 6vw, 80px) 0;
+}
+.web-section--tint {
+  background: var(--surface-2);
+  border-block: 1px solid var(--border);
+}
+
+.web-title {
+  margin: 0 0 var(--s-2);
+  font-size: clamp(1.5rem, 3vw, 2.1rem);
+  letter-spacing: -0.01em;
+}
+
+.web-lede {
+  margin: 0 0 var(--s-6);
+  color: var(--text-2);
+  max-width: 62ch;
+}
+
+/* ---- about ---- */
+.web-about {
+  display: grid;
+  grid-template-columns: minmax(0, 1.2fr) minmax(0, 1fr);
+  gap: clamp(var(--s-5), 4vw, 56px);
+  margin-top: var(--s-5);
+  align-items: start;
+}
+
+.web-about__text {
+  color: var(--text-2);
+  line-height: 1.75;
+}
+.web-about__text :where(h1, h2, h3, h4) {
+  color: var(--text);
+  margin: var(--s-5) 0 var(--s-2);
+}
+.web-about__text :where(p, ul, ol) {
+  margin: 0 0 var(--s-4);
+}
+.web-about__text a {
+  color: var(--primary-600);
+}
+/* rich text from the admin can carry anything — keep it inside the column */
+.web-about__text :where(img, table, iframe) {
+  max-width: 100%;
+  height: auto;
+}
+
+.web-points {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: var(--s-3);
+}
+.web-points li {
+  display: flex;
+  gap: var(--s-3);
+  padding: var(--s-4);
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--r-lg);
+}
+.web-points ion-icon {
+  flex: 0 0 auto;
+  font-size: 1.5rem;
+  color: var(--primary-600);
+}
+.web-points strong {
+  display: block;
+}
+.web-points span {
+  font-size: var(--fs-sm);
+  color: var(--text-2);
+}
+
+/* ---- products ---- */
+.web-grid {
+  display: grid;
+  /* min() so a card can shrink below its ideal width on a narrow phone
+     instead of overflowing the section */
+  grid-template-columns: repeat(auto-fill, minmax(min(240px, 100%), 1fr));
+  gap: var(--s-4);
+}
+
+.web-card {
+  display: flex;
+  flex-direction: column;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--r-lg);
+  overflow: hidden;
+  transition: transform var(--t-fast), box-shadow var(--t-fast),
+    border-color var(--t-fast);
+}
+.web-card:hover {
+  transform: translateY(-2px);
+  border-color: var(--primary-500);
+  box-shadow: var(--shadow-md, var(--shadow-sm));
+}
+
+.web-card__shot {
+  aspect-ratio: 4 / 3;
+  background: var(--bg);
+}
+.web-card__shot img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+.web-card__body {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: var(--s-4);
+  min-width: 0;
+}
+.web-card__body strong {
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+.web-card__body small {
+  color: var(--text-3);
+  font-size: var(--fs-sm);
+}
+
+.web-card__price {
+  margin-top: var(--s-2);
+  font-size: var(--fs-lg, 1.05rem);
+  font-weight: 700;
+  color: var(--primary-600);
+}
+.web-card__price small {
+  display: block;
+  font-weight: 400;
+}
+
+.web-chips {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: var(--s-2);
+  margin-top: var(--s-5);
+}
+
+.web-more {
+  margin-top: var(--s-6);
+}
+
+/* ---- contact ---- */
+.web-contact {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1.1fr);
+  gap: clamp(var(--s-5), 4vw, 48px);
+  margin-top: var(--s-5);
+  align-items: start;
+}
+
+.web-contact__list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: var(--s-3);
+}
+.web-contact__list li {
+  display: flex;
+  gap: var(--s-3);
+  padding: var(--s-4);
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--r-lg);
+}
+.web-contact__list ion-icon {
+  flex: 0 0 auto;
+  font-size: 1.4rem;
+  color: var(--primary-600);
+}
+.web-contact__list strong {
+  display: block;
+}
+.web-contact__list span {
+  color: var(--text-2);
+  overflow-wrap: anywhere;
+}
+.web-contact__list a {
+  color: var(--primary-600);
+  text-decoration: none;
+}
+.web-contact__list a:hover {
+  text-decoration: underline;
+}
+
+.web-map iframe {
+  width: 100%;
+  height: 320px;
+  border: 1px solid var(--border);
+  border-radius: var(--r-lg);
+  display: block;
+}
+
+/* --------------------------------------------------------------- footer */
+.web-foot {
+  padding: var(--s-6) 0;
+  background: var(--surface);
+  border-top: 1px solid var(--border);
+  font-size: var(--fs-sm);
+  color: var(--text-3);
+}
+
+.web-foot__inner {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: var(--s-3) var(--s-5);
+  justify-content: space-between;
+}
+
+/* the logo again, small, beside the copyright line */
+.web-foot__brand {
+  display: flex;
+  align-items: center;
+  gap: var(--s-3);
+}
+
+.web-foot__logo {
+  height: 28px;
+  width: auto;
+  max-width: 120px;
+  object-fit: contain;
+}
+
+.web-foot__links {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--s-4);
+}
+.web-foot__links a {
+  color: var(--text-2);
+  text-decoration: none;
+}
+.web-foot__links a:hover {
+  color: var(--primary-600);
+}
+
+/* the maintainer credit, on its own line under the copyright row */
+.web-foot__by {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--s-2) var(--s-5);
+  margin-top: var(--s-4);
+  padding-top: var(--s-4);
+  border-top: 1px solid var(--border);
+  font-size: var(--fs-sm);
+  color: var(--text-3);
+}
+.web-foot__by a {
+  color: var(--text-2);
+  text-decoration: none;
+}
+.web-foot__by a:hover {
+  color: var(--primary-600);
+  text-decoration: underline;
+}
+
+.web-foot__contact {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--s-2) var(--s-4);
+}
+.web-foot__contact a {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  white-space: nowrap;
+}
+.web-foot__contact ion-icon {
+  font-size: 1rem;
+  color: var(--primary-600);
+}
+
+.web-social {
+  display: flex;
+  gap: var(--s-3);
+  font-size: 1.2rem;
+}
+.web-social a {
+  color: var(--text-3);
+}
+.web-social a:hover {
+  color: var(--primary-600);
+}
+
+/* -------------------------------------------------------- back to top */
+.web-up {
+  position: fixed;
+  right: var(--gutter);
+  bottom: var(--s-5);
+  z-index: 700;
+
+  display: grid;
+  place-items: center;
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  background: var(--primary-600);
+  color: #fff;
+  font-size: 1.3rem;
+  box-shadow: var(--shadow-md, var(--shadow-sm));
+
+  /* hidden until the page has been scrolled, and not tabbable while hidden */
+  opacity: 0;
+  visibility: hidden;
+  transform: translateY(8px);
+  transition: opacity var(--t-fast), transform var(--t-fast),
+    visibility var(--t-fast);
+}
+.web-up.is-on {
+  opacity: 1;
+  visibility: visible;
+  transform: none;
+}
+.web-up:hover {
+  background: var(--primary-500);
+}
+
+/* ========================================================== responsive */
+
+@media (max-width: 900px) {
+  .web-hero__inner,
+  .web-about,
+  .web-contact {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  /* three across, so the numbers still read as a row on a tablet */
+  .web-stats {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+  .web-stat {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 2px;
+  }
+}
+
+@media (max-width: 720px) {
+  /* the bar gets shorter here, so the jump offset follows it */
+  :root {
+    --web-nav-h: 60px;
+  }
+
+  .web-burger {
+    display: grid;
+  }
+
+  /* the menu drops out of the bar and becomes a sheet under it */
+  .web-menu {
+    position: absolute;
+    top: 100%;
+    left: 0;
+    right: 0;
+    display: none;
+    flex-direction: column;
+    align-items: stretch;
+    gap: 0;
+    padding: var(--s-2);
+    background: var(--surface);
+    border-bottom: 1px solid var(--border);
+    box-shadow: var(--shadow-md, var(--shadow-sm));
+  }
+  .web-menu.is-open {
+    display: flex;
+  }
+  .web-menu a {
+    padding: var(--s-3) var(--s-4);
+  }
+
+  .web-nav__inner {
+    position: relative;
+  }
+
+  /* the name can go; the logo carries it on a small screen */
+  .web-brand__name {
+    display: none;
+  }
+
+  .web-hero__cta .btn {
+    flex: 1 1 100%;
+    justify-content: center;
+  }
+
+  .web-foot__inner {
+    justify-content: center;
+    text-align: center;
+  }
+  /* stacked and centred, so the credit and the two contacts each get a line */
+  .web-foot__by {
+    justify-content: center;
+    text-align: center;
+  }
+  .web-foot__contact {
+    justify-content: center;
+  }
+}
+
+@media (max-width: 480px) {
+  .web-stats {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .web-stat {
+    flex-direction: row;
+    align-items: baseline;
+    justify-content: space-between;
+  }
+}
