@@ -1,0 +1,7 @@
+Django
+djangorestframework
+django-jazzmin
+psycopg[binary]
+Pillow
+openpyxl
+reportlab

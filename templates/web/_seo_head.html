@@ -1,0 +1,29 @@
+{% comment %}
+Search and share tags for a public page. Expects `seo` from web/services.py:
+title, description, url, image, site_name and json_ld.
+{% endcomment %}
+<title>{{ seo.title }}</title>
+<meta name="description" content="{{ seo.description }}">
+<meta name="robots" content="index, follow, max-image-preview:large, max-snippet:-1">
+<link rel="canonical" href="{{ seo.url }}">
+
+<!---how the link looks when shared on WhatsApp, Facebook, LinkedIn -->
+<meta property="og:type" content="website">
+<meta property="og:locale" content="en_IN">
+<meta property="og:site_name" content="{{ seo.site_name }}">
+<meta property="og:title" content="{{ seo.title }}">
+<meta property="og:description" content="{{ seo.description }}">
+<meta property="og:url" content="{{ seo.url }}">
+<meta property="og:image" content="{{ seo.image }}">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta property="og:image:alt" content="{{ seo.site_name }} dealer ordering app">
+
+<!---and on X / Twitter -->
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="{{ seo.title }}">
+<meta name="twitter:description" content="{{ seo.description }}">
+<meta name="twitter:image" content="{{ seo.image }}">
+
+<!---structured data: company, website, app and products, for Google -->
+<script type="application/ld+json">{{ seo.json_ld|safe }}</script>

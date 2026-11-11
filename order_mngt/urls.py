@@ -44,7 +44,8 @@ urlpatterns = [
     path("api/", include("products.api_urls")),
 
     # the public one-page site — this is the landing page at /
-    # it holds only path(""), so it matches / exactly and shadows nothing above
+    # plus the app install page, manifest, sw.js, robots.txt and sitemap.xml;
+    # each is an exact path, so none of them shadows anything above
     path("", include("web.urls")),
 
 ]

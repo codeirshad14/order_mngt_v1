@@ -1,0 +1,26 @@
+{% load static pwa_tags %}
+{% comment %}
+Makes a page installable as an app. Included in the <head> of every base page
+(the app shell, the landing page, the login form, the install page) so the
+browser can offer "Install" wherever a dealer happens to be.
+{% endcomment %}
+<link rel="manifest" href="{% url 'web:manifest' %}">
+
+<!---status-bar colour; pwa.js keeps it in step with the dark-mode switch -->
+<meta name="theme-color" content="#ffffff" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#181a2c" media="(prefers-color-scheme: dark)">
+
+<!---iPhone / iPad: open full screen from the home screen, under this name -->
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="{% pwa_short_name %}">
+<meta name="format-detection" content="telephone=no">
+
+<link rel="icon" href="{% static 'assets/pwa/favicon.ico' %}" sizes="any">
+<link rel="icon" type="image/png" sizes="32x32" href="{% static 'assets/pwa/favicon-32.png' %}">
+<link rel="apple-touch-icon" href="{% static 'assets/pwa/apple-touch-icon.png' %}">
+
+<link rel="preconnect" href="https://unpkg.com" crossorigin>
+<link rel="stylesheet" href="{% static 'assets/css/pwa.css' %}">
+<script src="{% static 'assets/js/pwa.js' %}" data-sw="{% url 'web:service_worker' %}" defer></script>

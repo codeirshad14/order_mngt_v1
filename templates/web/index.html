@@ -6,15 +6,9 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 
-    <title>{{ company.name|default:"Order Mgmt" }}</title>
-    <meta name="description"
-          content="{{ company.name|default:'Order Mgmt' }} — wholesale ordering for our dealers.">
-
-    <!---the company logo doubles as the tab icon -->
-    {% if company.logo %}
-    <link rel="icon" href="{{ company.logo.url }}">
-    <link rel="apple-touch-icon" href="{{ company.logo.url }}">
-    {% endif %}
+    <!---title, description, share card and structured data, built in
+         web/services.py from the company details in the admin -->
+    {% include "web/_seo_head.html" %}
 
     <!---the app's own stylesheet first, purely for its design tokens: the
          same colours, spacing scale, radii and dark mode the dashboard uses.
@@ -30,6 +24,9 @@
                 t || (matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light"));
         } catch (e) { }
     </script>
+
+    <!---installable as an app: manifest, app icons, service worker -->
+    {% include "web/_pwa_head.html" %}
 </head>
 
 <body class="web">
@@ -60,9 +57,18 @@
             <a href="#about">About Us</a>
             <a href="#products">Product</a>
             <a href="#contact">Contact Us</a>
+            <a href="{% url 'web:install' %}">Get App</a>
         </nav>
 
         <div class="web-nav__actions">
+            <!---installs the app where the browser can; otherwise opens the
+                 install page with the steps for this phone -->
+            <a class="btn btn--ghost btn--sm pwa-install" href="{% url 'web:install' %}"
+               data-pwa-install aria-label="Download the app">
+                <ion-icon name="download-outline"></ion-icon>
+                <span class="pwa-install__label">Get App</span>
+            </a>
+
             <button class="icon-btn" id="webTheme" type="button" aria-label="Toggle dark mode">
                 <ion-icon name="moon-outline"></ion-icon>
             </button>
@@ -108,6 +114,9 @@
                 </a>
                 <a class="btn btn--ghost" href="#products">
                     <ion-icon name="albums-outline"></ion-icon> See Products
+                </a>
+                <a class="btn btn--ghost" href="{% url 'web:install' %}" data-pwa-install>
+                    <ion-icon name="download-outline"></ion-icon> Install App
                 </a>
             </div>
 
@@ -315,6 +324,7 @@
             <a href="#about">About</a>
             <a href="#products">Product</a>
             <a href="#contact">Contact</a>
+            <a href="{% url 'web:install' %}">Get App</a>
             <a href="{% url 'login' %}">Log in</a>
         </span>
 

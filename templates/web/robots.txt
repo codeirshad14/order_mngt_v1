@@ -1,0 +1,23 @@
+# Public pages: the landing page and the app download page.
+# Everything behind the login is kept out of search results.
+User-agent: *
+Allow: /
+Allow: /accounts/login/
+Disallow: /admin/
+Disallow: /api/
+Disallow: /accounts/
+Disallow: /mybase
+Disallow: /dashboard/
+Disallow: /products/
+Disallow: /delaer/
+Disallow: /myorder/
+Disallow: /catelog/
+Disallow: /contact/
+Disallow: /about/
+Disallow: /bankdetails/
+Disallow: /payment/
+Disallow: /reports/
+Disallow: /attendance/
+Disallow: /offline/
+
+Sitemap: {{ site_url }}/sitemap.xml

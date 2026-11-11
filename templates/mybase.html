@@ -7,6 +7,8 @@
     <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 
     <title>{% block title %}My Base{% endblock %}</title>
+    <!---signed-in pages hold a dealer's own data: keep them out of search results -->
+    <meta name="robots" content="noindex, nofollow">
 
     <link rel="stylesheet" href="{% static 'assets/css/style.css' %}">
     <!-- set the theme before first paint so dark mode never flashes white -->
@@ -17,6 +19,9 @@
                 t || (matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light"));
         } catch (e) { }
     </script>
+
+    <!---installable as an app: manifest, app icons, service worker -->
+    {% include "web/_pwa_head.html" %}
 </head>
 
 <body>
@@ -106,6 +111,13 @@
                         aria-label="Product matches" data-suggest-panel hidden></div>
                 </div>
                 <div class="topbar__actions">
+                    <!---installs the app where the browser can; otherwise opens
+                         the install page. Hidden inside the installed app. -->
+                    <a class="btn btn--ghost btn--sm pwa-install" href="{% url 'web:install' %}"
+                       data-pwa-install aria-label="Install the app">
+                        <ion-icon name="download-outline"></ion-icon>
+                        <span class="pwa-install__label">Install App</span>
+                    </a>
                     <button class="icon-btn" id="themeToggle" aria-label="Toggle dark mode">
                         <ion-icon name="moon-outline"></ion-icon>
                     </button>

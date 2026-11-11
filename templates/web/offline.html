@@ -1,0 +1,45 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+    <title>You are offline</title>
+    <meta name="robots" content="noindex">
+    <link rel="stylesheet" href="{% static 'assets/css/style.css' %}">
+    <link rel="stylesheet" href="{% static 'assets/css/pwa.css' %}">
+    <script>
+        try {
+            var t = localStorage.getItem("om-theme");
+            document.documentElement.setAttribute("data-theme",
+                t || (matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light"));
+        } catch (e) { }
+    </script>
+</head>
+
+<!-- the service worker shows this page when a screen is opened with no
+     internet; it is saved on the phone when the app is installed -->
+
+<body class="auth-page">
+    <main class="auth-card offline-card">
+        <ion-icon name="cloud-offline-outline"></ion-icon>
+        <h1>You are offline</h1>
+        <p class="muted">
+            Check your Wi-Fi or mobile data and try again. Orders and live stock
+            need an internet connection.
+        </p>
+        <button class="btn btn--primary auth-card__submit" type="button" onclick="location.reload()">
+            <ion-icon name="refresh-outline"></ion-icon> Try again
+        </button>
+    </main>
+
+    <script>
+        // come back by itself as soon as the connection returns
+        window.addEventListener("online", function () { location.reload(); });
+    </script>
+    <script type="module" src="https://unpkg.com/ionicons@5.5.2/dist/ionicons/ionicons.esm.js"></script>
+    <script nomodule src="https://unpkg.com/ionicons@5.5.2/dist/ionicons/ionicons.js"></script>
+</body>
+
+</html>

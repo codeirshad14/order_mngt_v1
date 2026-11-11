@@ -1,11 +1,13 @@
-{% load static %}
+{% load static pwa_tags %}
 <!DOCTYPE html>
 <html lang="en">
 
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-    <title>Sign In &middot; Order Mgmt</title>
+    <title>Dealer Sign In &middot; Order Mgmt</title>
+    <meta name="description" content="Sign in to your dealer account to place orders, check live stock and GST prices, and track payments.">
+    <link rel="canonical" href="{% site_url %}{% url 'login' %}">
     <link rel="stylesheet" href="{% static 'assets/css/style.css' %}">
     <script>
         try {
@@ -14,6 +16,9 @@
                 t || (matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light"));
         } catch (e) { }
     </script>
+
+    <!---installable as an app: manifest, app icons, service worker -->
+    {% include "web/_pwa_head.html" %}
 </head>
 
 <!-- standalone: the sidebar and topbar belong to signed-in pages, but it
@@ -62,6 +67,12 @@
                 <ion-icon name="log-in-outline"></ion-icon> Sign In
             </button>
         </form>
+
+        <!---hidden inside the installed app -->
+        <a class="btn btn--ghost auth-card__submit pwa-install" href="{% url 'web:install' %}"
+           data-pwa-install style="margin-top: var(--s-3)">
+            <ion-icon name="download-outline"></ion-icon> Install the app on this device
+        </a>
     </main>
 
     <script type="module" src="https://unpkg.com/ionicons@5.5.2/dist/ionicons/ionicons.esm.js"></script>
