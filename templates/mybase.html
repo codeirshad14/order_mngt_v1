@@ -111,13 +111,13 @@
                         aria-label="Product matches" data-suggest-panel hidden></div>
                 </div>
                 <div class="topbar__actions">
-                    <!---installs the app where the browser can; otherwise opens
-                         the install page. Hidden inside the installed app. -->
-                    <a class="btn btn--ghost btn--sm pwa-install" href="{% url 'web:install' %}"
-                       data-pwa-install aria-label="Install the app">
+                    <!---opens the browser's install prompt (or the iPhone steps).
+                         Hidden inside the installed app. -->
+                    <button class="btn btn--ghost btn--sm pwa-install" type="button"
+                            data-pwa-install aria-label="Install the app">
                         <ion-icon name="download-outline"></ion-icon>
                         <span class="pwa-install__label">Install App</span>
-                    </a>
+                    </button>
                     <button class="icon-btn" id="themeToggle" aria-label="Toggle dark mode">
                         <ion-icon name="moon-outline"></ion-icon>
                     </button>

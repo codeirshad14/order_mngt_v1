@@ -22,7 +22,7 @@ SITE_URL = "https://order.initiatorsolutions.com"
 
 # Bump this when sw.js or the files it pre-caches change, so installed apps
 # throw away their old copies.
-SW_VERSION = "1"
+SW_VERSION = "2"
 
 DEFAULT_NAME = "Order Mgmt"
 
@@ -111,9 +111,9 @@ def web_app(company):
     """schema.org WebApplication: the installable app itself."""
     return {
         "@type": "WebApplication",
-        "@id": SITE_URL + "/app/#app",
+        "@id": SITE_URL + "/#app",
         "name": f"{company_name(company)} Dealer App",
-        "url": absolute(reverse("web:install")),
+        "url": SITE_URL + "/",
         "applicationCategory": "BusinessApplication",
         "operatingSystem": "Android, iOS, Windows, macOS",
         "browserRequirements": "Requires a modern web browser",
@@ -191,36 +191,6 @@ def home_seo(company, about, products, stats):
     }
 
 
-def install_seo(company):
-    """Title, description, share card and structured data for the install page."""
-    name = company_name(company)
-    return {
-        "title": f"Download the {name} App – Android, iPhone & PC",
-        "description": Truncator(
-            f"Install the {name} dealer app free in one tap – no Play Store or "
-            f"App Store needed. Order, track stock and payments from your phone or PC."
-        ).chars(160),
-        "url": absolute(reverse("web:install")),
-        "image": absolute(static(SHARE_IMAGE)),
-        "site_name": name,
-        "json_ld": to_json_ld({
-            "@context": "https://schema.org",
-            "@graph": [
-                organization(company),
-                web_app(company),
-                {
-                    "@type": "BreadcrumbList",
-                    "itemListElement": [
-                        {"@type": "ListItem", "position": 1, "name": "Home", "item": SITE_URL + "/"},
-                        {"@type": "ListItem", "position": 2, "name": "Download App",
-                         "item": absolute(reverse("web:install"))},
-                    ],
-                },
-            ],
-        }),
-    }
-
-
 # ---------------------------------------------------------------- app manifest
 
 def manifest(company):
@@ -283,5 +253,4 @@ def sitemap_pages():
 
     return [
         {"loc": SITE_URL + "/", "lastmod": home_changed, "changefreq": "daily", "priority": "1.0"},
-        {"loc": absolute(reverse("web:install")), "lastmod": None, "changefreq": "monthly", "priority": "0.8"},
     ]

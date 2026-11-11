@@ -1,0 +1,154 @@
+/* ============================================================================
+   Progressive web app — the Get App buttons, the offline bar, the installed-
+   app tweaks and the install page (/app/). Loaded after style.css / web.css,
+   so it only uses their design tokens and never restyles what they own.
+   ========================================================================== */
+
+/* ---------------------------------------------------- Get App buttons */
+.pwa-install {
+  white-space: nowrap;
+}
+/* inside the installed app there is nothing left to install */
+[data-pwa-install][hidden],
+.pwa-standalone [data-pwa-install],
+.pwa-installed [data-pwa-install] {
+  display: none !important;
+}
+/* when the browser is ready to install, the button says so with a soft ring */
+.pwa-can-install .pwa-install {
+  border-color: var(--primary-500);
+  color: var(--primary-600);
+  box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.18);
+}
+@media (max-width: 560px) {
+  .pwa-install__label {
+    display: none;
+  }
+}
+
+/* ----------------------------------------------------------- offline bar */
+.pwa-offline {
+  position: fixed;
+  left: 50%;
+  top: calc(env(safe-area-inset-top, 0px) + 10px);
+  z-index: 2000;
+  display: flex;
+  align-items: center;
+  gap: var(--s-2);
+  max-width: calc(100% - 24px);
+  padding: 8px 14px;
+  border-radius: var(--r-full);
+  background: #1f2937;
+  color: #fff;
+  font-size: var(--fs-sm);
+  box-shadow: var(--shadow-lg);
+  transform: translate(-50%, -160%);
+  transition: transform var(--t);
+  pointer-events: none;
+}
+.pwa-offline.is-on {
+  transform: translate(-50%, 0);
+}
+.pwa-offline ion-icon {
+  flex: 0 0 auto;
+  font-size: 1.1rem;
+}
+
+/* --------------------------------------------- feel like a real app */
+@media (display-mode: standalone) {
+  html,
+  body {
+    overscroll-behavior-y: none;   /* no rubber-band pull on the whole page */
+  }
+  body {
+    -webkit-tap-highlight-color: transparent;
+  }
+  /* buttons and nav don't select like text when long-pressed */
+  .sidebar,
+  .topbar,
+  .bottombar,
+  .web-nav,
+  .btn,
+  .icon-btn {
+    -webkit-user-select: none;
+    user-select: none;
+  }
+  /* landscape phones with a notch */
+  .topbar,
+  .web-nav__inner {
+    padding-left: max(var(--gutter), env(safe-area-inset-left, 0px));
+    padding-right: max(var(--gutter), env(safe-area-inset-right, 0px));
+  }
+}
+
+/* ===================================================== steps popup
+   Opened by a Get App button when the browser has no install prompt to
+   offer (always the case on iPhone). Built by pwa.js. */
+.pwa-steps {
+  width: min(420px, calc(100% - 32px));
+  margin: auto;
+  padding: 0;
+  border: none;
+  border-radius: var(--r-xl);
+  background: var(--surface);
+  color: var(--text);
+  box-shadow: var(--shadow-lg);
+}
+.pwa-steps::backdrop {
+  background: rgba(16, 17, 31, 0.55);
+  backdrop-filter: blur(2px);
+}
+.pwa-steps__body {
+  position: relative;
+  padding: var(--s-7) var(--s-6) var(--s-6);
+  text-align: center;
+}
+.pwa-steps__close {
+  position: absolute;
+  top: var(--s-2);
+  right: var(--s-2);
+}
+.pwa-steps img {
+  width: 56px;
+  height: 56px;
+  border-radius: 14px;
+  box-shadow: var(--shadow-md);
+}
+.pwa-steps h2 {
+  margin: var(--s-4) 0;
+  font-size: var(--fs-xl);
+}
+.pwa-steps ol {
+  display: grid;
+  gap: var(--s-3);
+  margin: 0 0 var(--s-6);
+  padding-left: 1.3rem;
+  text-align: left;
+  line-height: 1.55;
+  color: var(--text-2);
+}
+.pwa-steps ol strong {
+  color: var(--text);
+}
+.pwa-steps ol ion-icon {
+  vertical-align: -3px;
+  font-size: 1.1rem;
+  color: var(--primary-600);
+}
+.pwa-steps .btn--primary {
+  width: 100%;
+  min-height: 44px;
+  justify-content: center;
+}
+
+/* ------------------------------------------------------------ offline page */
+.offline-card {
+  text-align: center;
+}
+.offline-card > ion-icon {
+  font-size: 3rem;
+  color: var(--primary-500);
+}
+.offline-card .btn {
+  margin-top: var(--s-5);
+}

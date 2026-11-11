@@ -32,11 +32,14 @@ class PublicPagesTests(TestCase):
         self.assertContains(response, "data-pwa-install")
         self.assertContains(response, 'rel="manifest"')
 
-    def test_install_page_is_public(self):
-        response = self.client.get(reverse("web:install"))
-        self.assertEqual(response.status_code, 200)
-        self.assertContains(response, "Download the Acme Traders App")
-        self.assertContains(response, 'id="steps"')
+    def test_old_install_page_redirects_home(self):
+        response = self.client.get("/app/")
+        self.assertRedirects(response, reverse("web:home"), status_code=301)
+
+    def test_get_app_is_a_button_not_a_link(self):
+        response = self.client.get(reverse("web:home"))
+        self.assertContains(response, '<button class="btn btn--ghost btn--sm pwa-install" type="button"')
+        self.assertNotContains(response, 'href="/app/"')
 
     def test_structured_data_is_valid_json(self):
         response = self.client.get(reverse("web:home"))
@@ -101,7 +104,7 @@ class SearchEngineFilesTests(TestCase):
         self.assertEqual(response.status_code, 200)
         self.assertTrue(response.content.startswith(b'<?xml version="1.0"'))
         self.assertContains(response, "<loc>https://order.initiatorsolutions.com/</loc>")
-        self.assertContains(response, "<loc>https://order.initiatorsolutions.com/app/</loc>")
+        self.assertNotContains(response, "/app/")
 
     def test_favicon_redirects_to_static(self):
         response = self.client.get("/favicon.ico")

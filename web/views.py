@@ -61,14 +61,11 @@ def home(request):
     })
 
 
-# The "Download app" page: an Install button plus the steps for each phone.
+# /app/ used to be a separate download page. The Get App button now installs
+# straight from the landing page, so old links and bookmarks land there.
 @login_not_required
 def install(request):
-    company = services.get_company()
-    return render(request, "web/install.html", {
-        "company": company,
-        "seo": services.install_seo(company),
-    })
+    return redirect("web:home", permanent=True)
 
 
 # Shown by the installed app when a page is opened with no internet.

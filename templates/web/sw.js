@@ -18,7 +18,7 @@ const PAGE_CACHE = VERSION + "-pages";
 const MAX_IMAGES = 150;
 
 const OFFLINE_URL = "{% url 'web:offline' %}";
-const PUBLIC_PAGES = ["{% url 'web:home' %}", "{% url 'web:install' %}"];
+const PUBLIC_PAGES = ["{% url 'web:home' %}"];
 const STATIC_PREFIX = "{% get_static_prefix %}";
 const MEDIA_PREFIX = "{% get_media_prefix %}";
 const SKIP = ["/admin/", "/api/", "/accounts/"];

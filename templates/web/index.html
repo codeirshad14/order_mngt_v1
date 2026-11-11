@@ -60,13 +60,13 @@
         </nav>
 
         <div class="web-nav__actions">
-            <!---installs the app where the browser can; otherwise opens the
-                 install page with the steps for this phone -->
-            <a class="btn btn--ghost btn--sm pwa-install" href="{% url 'web:install' %}"
-               data-pwa-install aria-label="Download the app">
+            <!---opens the browser's install prompt; on iPhone, which has
+                 none, pwa.js shows the Add to Home Screen steps instead -->
+            <button class="btn btn--ghost btn--sm pwa-install" type="button"
+                    data-pwa-install aria-label="Download the app">
                 <ion-icon name="download-outline"></ion-icon>
                 <span class="pwa-install__label">Get App</span>
-            </a>
+            </button>
 
             <button class="icon-btn" id="webTheme" type="button" aria-label="Toggle dark mode">
                 <ion-icon name="moon-outline"></ion-icon>
@@ -114,9 +114,9 @@
                 <a class="btn btn--ghost" href="#products">
                     <ion-icon name="albums-outline"></ion-icon> See Products
                 </a>
-                <a class="btn btn--ghost" href="{% url 'web:install' %}" data-pwa-install>
+                <button class="btn btn--ghost" type="button" data-pwa-install>
                     <ion-icon name="download-outline"></ion-icon> Install App
-                </a>
+                </button>
             </div>
 
             {% if company.working_hours %}
@@ -323,7 +323,6 @@
             <a href="#about">About</a>
             <a href="#products">Product</a>
             <a href="#contact">Contact</a>
-            <a href="{% url 'web:install' %}">Get App</a>
             <a href="{% url 'login' %}">Log in</a>
         </span>
 

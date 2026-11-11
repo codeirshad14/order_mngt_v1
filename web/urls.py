@@ -10,7 +10,7 @@ urlpatterns = [
     # the whole site is one page; the nav links jump to sections on it
     path("", views.home, name="home"),
 
-    # the "Download app" page the Get App buttons point to
+    # the old download page; now only redirects to the landing page
     path("app/", views.install, name="install"),
     path("offline/", views.offline, name="offline"),
 

@@ -1,4 +1,4 @@
-# Public pages: the landing page and the app download page.
+# Public pages: the landing page and the login form.
 # Everything behind the login is kept out of search results.
 User-agent: *
 Allow: /
